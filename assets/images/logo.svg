@@ -1,0 +1,17 @@
+<svg width="12.7" height="12.7" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="a" x1=".1" x2=".45" y1="-.39" y2=".35">
+            <stop offset="0" stop-color="gray"/>
+            <stop offset="1" stop-color="white" stop-opacity="1"/>
+        </linearGradient>
+    </defs>
+    <g class="layer">
+        <path d="M13.62-.2a5.71 5.26 0 0 0-5.71 5.26 5.71 5.26 0 0 0 5.71 5.26 5.71 5.26 0 0 0 3.61-1.19l2.1.62L18.92 7a5.71 5.26 0 0 0 .41-1.94A5.71 5.26 0 0 0 13.62-.2" fill="url(#a)" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width=".21" transform="translate(-8.221 .936)scale(1.0695)"/>
+        <text font-family="sans-serif" font-size="7.75" stroke-width=".17" x="2.08" y="9.41">
+            <tspan font-family="Impact" font-weight="bold" x="2.08" y="9.41">C</tspan>
+        </text>
+        <text fill="#1fe03c" font-family="Impact" font-size="7.99" font-weight="bold" stroke-width=".17" transform="scale(.98959 1.0105)" x="6.33" y="9.44">
+            <tspan x="6.33" y="9.44">K</tspan>
+        </text>
+    </g>
+</svg>

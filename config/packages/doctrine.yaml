@@ -25,6 +25,18 @@ doctrine:
         controller_resolver:
             auto_mapping: false
 
+        second_level_cache:
+            region_cache_driver:
+                type: pool
+                pool: doctrine.region_cache_pool
+            enabled: true
+
+framework:
+    cache:
+        pools:
+            doctrine.region_cache_pool:
+                adapter: cache.app
+
 when@test:
     doctrine:
         dbal:

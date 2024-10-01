@@ -1,0 +1,43 @@
+{% set req_langs = app.request.languages|map(l => l|replace({'_': '-'})) %}
+{% set app_langs = funcComicKingApp.languages(null)|map(l => l.lang) %}
+{% set rec_langs = funcComicKingApp.recommendedLangs(app_langs, req_langs) %}
+
+<div class="d-flex flex-column gap-1">
+    {% for comic in result %}
+        <a
+            href="{{ path('app_comic_individual', { code: comic.code }) }}"
+            class="d-flex align-items-center gap-2 text-decoration-none border"
+        >
+            {% set comic_titles = funcComicKingApp.comicTitles(comic.code, rec_langs, 1) %}
+            {% if comic_titles|length > 0 %}
+                {% set comic_title = comic_titles[0] %}
+            {% else %}
+                {% set comic_title = null %}
+            {% endif %}
+
+            {% set comic_covers = funcComicKingApp.comicCovers(comic.code, [], 1) %}
+            {% if comic_covers|length > 0 %}
+                {% set comic_cover = comic_covers[0] %}
+            {% else %}
+                {% set comic_cover = null %}
+            {% endif %}
+            <img
+                src="{{
+                    comic_cover
+                    ? funcComicKingApp.href(comic_cover.linkWebsiteHost, comic_cover.linkRelativeReference)
+                    : asset('images/comic-cover.jpg')
+                }}"
+                alt="{{ comic_title.content ?? 'Comic' }} Cover"
+                class="flex-shrink-0 object-fit-cover bg-dark"
+                style="height: 64px; width: 48px;"
+            />
+
+            <div class="flex-grow-1 overflow-hidden">
+                <h2 class="fs-6 text-truncate m-0">{{ comic_title.content ?? 'No Title' }}</h2>
+                <small class="link-body-emphasis">{{ comic.createdAt|date('d F Y') }}</small>
+            </div>
+        </a>
+    {% else %}
+        {{ include('_err.html.twig', { message: 'No Comic Found' }) }}
+    {% endfor %}
+</div>

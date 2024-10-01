@@ -6,8 +6,16 @@ framework:
     # Note that the session will be started ONLY if you read or write from it.
     session: true
 
-    #esi: true
-    #fragments: true
+    esi: true
+    fragments: true
+
+    exceptions:
+        Doctrine\DBAL\Exception\UniqueConstraintViolationException:
+            log_level: debug
+            status_code: 409
+        Symfony\Component\Validator\Exception\ValidationFailedException:
+            log_level: debug
+            status_code: 400
 
 when@test:
     framework:

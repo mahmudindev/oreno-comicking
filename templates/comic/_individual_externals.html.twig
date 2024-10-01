@@ -1,0 +1,25 @@
+<div class="p-3 border border-2">
+    <h2 class="text-center fs-6 pb-2 border-bottom">EXTERNALS</h2>
+
+    {% set comic_externals = funcComicKingApp.comicExternals(result.code) %}
+    {% if comic_externals|length > 0 %}
+        <div class="row row-cols-1 {{ comic_externals|length > 1 ? 'row-cols-sm-2' : '' }} g-1 m-0">
+            {% for external in comic_externals %}
+                <div class="col">
+                    <a
+                        target="_blank"
+                        href="{{ funcComicKingApp.href(external.linkWebsiteHost, external.linkRelativeReference) }}"
+                        rel="noreferrer nofollow"
+                        class="d-block text-truncate text-decoration-none p-2 border"
+                    ><img
+                        src="{{ funcComicKingApp.href(external.linkWebsiteHost, '/favicon.ico') }}"
+                        alt=""
+                        style="height: 24px; width: 24px;"
+                    /> {{ external.linkWebsiteName }}</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        {{ include('_err.html.twig', { message: 'No External Found' }) }}
+    {% endif %}
+</div>

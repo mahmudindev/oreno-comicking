@@ -1,0 +1,10 @@
+<div class="align-self-center d-flex flex-column gap-2">
+    {% set message = message ?? 'Unknown Error' %}
+    <img
+        src="{{ asset('images/err.png') }}"
+        alt="{{ message }}"
+        class="mx-auto"
+        style="max-height: 128px;"
+    />
+    <span class="align-self-center fs-6">{{ message }}</span>
+</div>

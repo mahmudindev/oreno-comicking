@@ -1,0 +1,46 @@
+<div class="row m-0 shadow">
+    {% set comic_href = path('app_comic_individual', { code: comic.code }) %}
+    {% set comic_titles = funcComicKingApp.comicTitles(comic.code, rec_langs, 1) %}
+    {% if comic_titles|length > 0 %}
+        {% set comic_title = comic_titles[0] %}
+    {% endif %}
+
+    <a
+        href="{{ comic_href }}"
+        class="col p-0 bg-dark"
+        style="height: var(--comic-card-h); max-width: var(--comic-card-cover-w);"
+    >
+        {% set comic_covers = funcComicKingApp.comicCovers(comic.code, [], 1) %}
+        {% if comic_covers|length > 0 %}
+            {% set comic_cover = comic_covers[0] %}
+        {% else %}
+            {% set comic_cover = null %}
+        {% endif %}
+        <img
+            src="{{
+                comic_cover
+                ? funcComicKingApp.href(comic_cover.linkWebsiteHost, comic_cover.linkRelativeReference)
+                : asset('images/comic-cover.jpg')
+            }}"
+            alt="{{ comic_title.content ?? 'Comic' }} Cover"
+            class="w-100 h-100 object-fit-cover"
+        />
+    </a>
+
+    <div class="col overflow-hidden p-3" style="height: var(--comic-card-h);">
+        <a href="{{ comic_href }}" class="text-decoration-none">
+            <h5 class="text-truncate pb-2 border-bottom">{{ comic_title.content ?? 'No Title' }}</h5>
+        </a>
+        <div class="comic-card-synopsis overflow-y-auto" style="height: var(--comic-card-synopsis-h);">
+            {% set comic_synopses = funcComicKingApp.comicSynopses(comic.code, [], rec_langs, 1) %}
+            {% if comic_synopses|length > 0 %}
+                {% set comic_synopsis = comic_synopses[0] %}
+            {% endif %}
+            {% if comic_synopsis.content ?? false %}
+                {{ comic_synopsis.content|markdown_to_html }}
+            {% else %}
+                {{ 'Empty synopsis.' }}
+            {% endif %}
+        </div>
+    </div>
+</div>

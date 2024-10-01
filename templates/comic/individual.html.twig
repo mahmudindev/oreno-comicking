@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% set req_langs = app.request.languages|map(l => l|replace({'_': '-'})) %}
+{% set app_langs = funcComicKingApp.languages(null)|map(l => l.lang) %}
+{% set rec_langs = funcComicKingApp.recommendedLangs(app_langs, req_langs) %}
+
+{% set comic_titles = funcComicKingApp.comicTitles(result.code, rec_langs, 1) %}
+{% if comic_titles|length > 0 %}
+    {% set comic_title = comic_titles[0] %}
+{% endif %}
+
+{% block title %}{{ comic_title.content ?? 'Untitled Comic' }} - {{ parent() }}{% endblock %}
+
+{% block main %}
+    {{ include('comic/_style.html.twig') }}
+
+    <div class="d-flex flex-column flex-lg-row gap-4 p-4">
+        <div class="flex-grow-1 d-flex flex-column gap-3" style="min-width: 0;">
+            <div class="d-flex flex-column flex-md-row gap-3 comic-card">
+                {% set comic_covers = funcComicKingApp.comicCovers(result.code, [], 1) %}
+                {% if comic_covers|length > 0 %}
+                    {% set comic_cover = comic_covers[0] %}
+                {% else %}
+                    {% set comic_cover = null %}
+                {% endif %}
+                <img
+                    src="{{
+                        comic_cover
+                        ? funcComicKingApp.href(comic_cover.linkWebsiteHost, comic_cover.linkRelativeReference)
+                        : asset('images/comic-cover.jpg')
+                    }}"
+                    alt="{{ comic_title.content ?? 'Comic' }} Cover"
+                    class="flex-shrink-0 align-self-center object-fit-cover shadow bg-dark"
+                    style="height: var(--comic-card-h); width: var(--comic-card-cover-w);"
+                />
+
+                <div class="flex-grow-1 overflow-hidden p-3 border border-2">
+                    <h2 class="fs-5 text-truncate pb-2 border-bottom">{{ comic_title.content ?? 'No Title' }}</h2>
+                    <div class="comic-card-synopsis overflow-y-auto">
+                        {% set comic_synopses = funcComicKingApp.comicSynopses(result.code, [], rec_langs, 1) %}
+                        {% if comic_synopses|length > 0 %}
+                            {% set comic_synopsis = comic_synopses[0] %}
+                        {% endif %}
+                        {% if comic_synopsis.content ?? false %}
+                            {{ comic_synopsis.content|markdown_to_html }}
+                        {% else %}
+                            {{ 'Empty synopsis.' }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            {{ include('comic/_individual_externals.html.twig') }}
+        </div>
+
+        <div class="flex-shrink-0 sidebar">
+            <div class="p-3 border border-2">
+                <h2 class="fs-5 pb-2 border-bottom">⪢ New Comics</h2>
+                {{ render_esi(controller('App\\Controller\\ComicController::fragmentWidget', {
+                    limit: 4,
+                    orderBy: ['createdAt desc']
+                })) }}
+            </div>
+        </div>
+    </div>
+{% endblock %}

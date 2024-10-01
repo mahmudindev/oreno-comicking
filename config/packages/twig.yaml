@@ -1,6 +1,10 @@
 twig:
     file_name_pattern: '*.twig'
 
+    globals:
+        app_name: '%env(resolve:APP_NAME)%'
+        app_host_oreno: '%env(resolve:APP_HOST_ORENO)%'
+
 when@test:
     twig:
         strict_variables: true

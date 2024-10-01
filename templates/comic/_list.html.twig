@@ -1,0 +1,25 @@
+{% if result %}
+    {% set req_langs = app.request.languages|map(l => l|replace({'_': '-'})) %}
+    {% set app_langs = funcComicKingApp.languages(null)|map(l => l.lang) %}
+    {% set rec_langs = funcComicKingApp.recommendedLangs(app_langs, req_langs) %}
+
+    <style>
+        @media (max-width: 415.98px) {
+            .list-card {
+                --comic-card-h: 192px;
+                --comic-card-cover-w: 144px;
+                --comic-card-synopsis-h: 124px;
+            }
+        }
+    </style>
+
+    <div class="row row-cols-1 row-cols-lg-2 g-3">
+        {% for comic in result %}
+            <div class="col list-card">
+                {{ include('comic/_list_card.html.twig') }}
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    {{ include('_err.html.twig', { message: 'No Comic Found' }) }}
+{% endif %}

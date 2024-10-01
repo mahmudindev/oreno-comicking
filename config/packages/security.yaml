@@ -5,10 +5,22 @@ security:
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
         users_in_memory: { memory: null }
+
+        custom:
+            id: app.security.user_provider
+
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
+
+        api:
+            pattern: ^/api($|/)
+            stateless: true
+            access_token:
+                token_handler: app.security.access_token_handler
+            provider: custom
+
         main:
             lazy: true
             provider: users_in_memory
@@ -24,6 +36,27 @@ security:
     access_control:
         # - { path: ^/admin, roles: ROLE_ADMIN }
         # - { path: ^/profile, roles: ROLE_USER }
+
+        - { path: ^/api($|/), methods: [ POST, PUT, PATCH, DELETE ], roles: ROLE_ADMIN }
+
+    role_hierarchy:
+        ROLE_ADMIN: [ ROLE_USER ]
+        ROLE_SUPER_ADMIN: [ ROLE_ADMIN ]
+
+services:
+    app.security.user_provider:
+        class: App\Security\UserProvider
+        arguments:
+            $permissionID: '%env(resolve:APP_ID)%'
+
+    app.security.access_token_handler:
+        class: App\Security\AccessTokenHandler
+        arguments:
+            $cacheItemPool: '@cache.app'
+            $httpClient: '@psr18.http_client'
+            $httpRequestFactory: '@nyholm.psr7.psr17_factory'
+            $issuer: '%env(resolve:APP_OAUTH_ISSUER)%'
+            $audience: '%env(resolve:APP_OAUTH_AUDIENCE)%'
 
 when@test:
     security:

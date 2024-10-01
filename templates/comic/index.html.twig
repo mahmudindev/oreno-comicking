@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Comics - {{ parent() }}{% endblock %}
+
+{% block main %}
+    {{ include('comic/_style.html.twig') }}
+
+    <div class="d-flex flex-column justify-content-center hero">
+        <h2 class="align-self-center">Comics</h2>
+    </div>
+
+    <div class="d-flex flex-column gap-4 p-4">
+        {{ render(controller('App\\Controller\\ComicController::fragmentList', {
+            limit: paramLimit,
+            page: paramPage,
+            orderBy: paramOrderBy
+        })) }}
+
+        {% if resultCount > 0 %}
+            <nav class ="">
+                <ul class="pagination justify-content-center">
+                    {% set rawParameter = rawParameter|replace({
+                        ('page=' ~ paramPage): '',
+                        ('page=' ~ paramPage ~ '&'): '',
+                        ('&page=' ~ paramPage): ''
+                    }) %}
+
+                    {% set prevPageNum = paramPage - 1 %}
+                    {% set prevPageRef = path('app_comic_index', { page: prevPageNum }) %}
+                    {% if rawParameter %}
+                        {% set prevPageRef = prevPageRef ~ '&' ~ rawParameter %}
+                    {% endif %}
+                    {% set prevPageTes = paramPage > 1 %}
+                    <li class="page-item{{ prevPageTes ? '' : ' disabled' }}">
+                        <a class="page-link" href="{{ prevPageRef }}">Prev</a>
+                    </li>
+
+                    <li class="page-item active">
+                        <span class="page-link">{{ paramPage }}</span>
+                    </li>
+
+                    {% set nextPageNum = paramPage + 1 %}
+                    {% set nextPageRef = path('app_comic_index', { page: nextPageNum }) %}
+                    {% if rawParameter %}
+                        {% set nextPageRef = nextPageRef ~ '&' ~ rawParameter %}
+                    {% endif %}
+                    {% set nextPageTes = resultCount > paramLimit * paramPage %}
+                    <li class="page-item{{ nextPageTes ? '' : ' disabled' }}">
+                        <a class="page-link" href="{{ nextPageRef }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+{% endblock %}
