@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<svg width="12.7" height="12.7" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" version="1.1">
+ <defs>
+  <linearGradient id="linearGradient43179-5" x1="0.1" x2="0.45" y1="-0.39" y2="0.35">
+   <stop offset="0" stop-color="#808080"/>
+   <stop offset="1" stop-color="#808080" stop-opacity="0"/>
+  </linearGradient>
+ </defs>
+ <g class="layer">
+  <title>Layer 1</title>
+  <g id="svg_1" transform="matrix(1.0695 0 0 1.0695 -8.2213 .93562)">
+   <path d="m13.62,-0.2a5.71,5.26 0 0 0 -5.71,5.26a5.71,5.26 0 0 0 5.71,5.26a5.71,5.26 0 0 0 3.61,-1.19l2.1,0.62l-0.41,-2.75a5.71,5.26 0 0 0 0.41,-1.94a5.71,5.26 0 0 0 -5.71,-5.26z" fill="url(#linearGradient43179-5)" id="svg_2" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="0.21"/>
+  </g>
+  <text fill="#000000" font-family="sans-serif" font-size="7.75px" id="svg_3" stroke-width="0.17" x="2.08" y="9.41">
+   <tspan font-family="Impact" font-size="7.75px" font-weight="bold" id="svg_4" stroke-width="0.17" x="2.08" y="9.41">C</tspan>
+  </text>
+  <text fill="#1cd036" font-family="Impact" font-size="7.99px" font-weight="bold" id="svg_5" stroke-width="0.17" transform="scale(.98959 1.0105)" x="6.33" y="9.44">
+   <tspan fill="#1cd036" font-family="Impact" font-size="7.99px" font-weight="bold" id="svg_6" stroke-width="0.17" x="6.33" y="9.44">K</tspan>
+  </text>
+ </g>
+</svg>
