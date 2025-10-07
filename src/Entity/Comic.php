@@ -32,7 +32,7 @@ class Comic
     #[Serializer\Groups(['comic'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\Column(length: 12, unique: true, options: ['collation' => 'utf8mb4_bin'])]
+    #[ORM\Column(length: 12, unique: true)]
     #[Assert\NotBlank(allowNull: true), Assert\Length(12)]
     #[Serializer\Groups(['comic'])]
     private ?string $code = null;

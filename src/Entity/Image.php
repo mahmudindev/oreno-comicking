@@ -2,20 +2,20 @@
 
 namespace App\Entity;
 
-use App\Repository\LinkRepository;
+use App\Repository\ImageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation as Serializer;
+use Symfony\Component\Uid\Ulid;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: LinkRepository::class)]
-#[ORM\Table(name: 'link')]
-#[ORM\UniqueConstraint(columns: ['website_id', 'relative_reference'])]
+#[ORM\Entity(repositoryClass: ImageRepository::class)]
+#[ORM\Table(name: 'image')]
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Cache(usage: 'NONSTRICT_READ_WRITE')]
-class Link
+class Image
 {
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
@@ -23,38 +23,38 @@ class Link
     private ?int $id = null;
 
     #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
-    #[Serializer\Groups(['link'])]
+    #[Serializer\Groups(['image'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
-    #[Serializer\Groups(['link'])]
+    #[Serializer\Groups(['image'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\ManyToOne(inversedBy: 'links')]
-    #[ORM\JoinColumn(name: 'website_id', nullable: false, onDelete: 'CASCADE')]
-    #[Assert\NotNull]
-    private ?Website $website = null;
+    #[ORM\Column(type: 'ulid', unique: true)]
+    #[Serializer\Groups(['image'])]
+    private ?Ulid $ulid = null;
 
-    #[ORM\Column(length: 255, options: ['default' => '/'])]
-    #[Assert\Length(min: 1, max: 255)]
-    #[Assert\Regex('/^\/|\?|#/')]
-    #[Serializer\Groups(['link'])]
-    private ?string $relativeReference = null;
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(name: 'link_id', nullable: false, onDelete: 'CASCADE')]
+    #[Assert\NotNull]
+    private ?Link $link = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\NotBlank(allowNull: true), Assert\Length(min: 1, max: 255)]
+    #[Serializer\Groups(['image'])]
+    private ?string $alternativeText = null;
 
     #[ORM\PrePersist]
     public function onPrePersist(PrePersistEventArgs $args)
     {
         $this->setCreatedAt(new \DateTimeImmutable());
-
-        if ($this->relativeReference == null) $this->setRelativeReference('');
+        $this->setUlid(new Ulid());
     }
 
     #[ORM\PreUpdate]
     public function onPreUpdate(PreUpdateEventArgs $args)
     {
         $this->setUpdatedAt(new \DateTimeImmutable());
-
-        if ($this->relativeReference == null) $this->setRelativeReference('');
     }
 
     public function getId(): ?int
@@ -86,46 +86,58 @@ class Link
         return $this;
     }
 
-    public function getWebsite(): ?Website
+    public function getUlid(): ?Ulid
     {
-        return $this->website;
+        return $this->ulid;
     }
 
-    #[Serializer\Groups(['link'])]
-    public function getWebsiteHost(): ?string
+    public function setUlid(Ulid $ulid): static
     {
-        if ($this->website == null) {
-            return null;
-        }
-
-        return $this->website->getHost();
-    }
-
-    #[Serializer\Groups(['link'])]
-    public function getWebsiteName(): ?string
-    {
-        if ($this->website == null) {
-            return null;
-        }
-
-        return $this->website->getName();
-    }
-
-    public function setWebsite(?Website $website): static
-    {
-        $this->website = $website;
+        $this->ulid = $ulid;
 
         return $this;
     }
 
-    public function getRelativeReference(): ?string
+    public function getLink(): ?Link
     {
-        return $this->relativeReference;
+        return $this->link;
     }
 
-    public function setRelativeReference(?string $relativeReference): static
+    #[Serializer\Groups(['image'])]
+    public function getLinkWebsiteHost(): ?string
     {
-        $this->relativeReference = $relativeReference;
+        if ($this->link == null) {
+            return null;
+        }
+
+        return $this->link->getWebsiteHost();
+    }
+
+    #[Serializer\Groups(['image'])]
+    public function getLinkRelativeReference(): ?string
+    {
+        if ($this->link == null) {
+            return null;
+        }
+
+        return $this->link->getRelativeReference();
+    }
+
+    public function setLink(?Link $link): static
+    {
+        $this->link = $link;
+
+        return $this;
+    }
+
+    public function getAlternativeText(): ?string
+    {
+        return $this->alternativeText;
+    }
+
+    public function setAlternativeText(?string $alternativeText): static
+    {
+        $this->alternativeText = $alternativeText;
 
         return $this;
     }

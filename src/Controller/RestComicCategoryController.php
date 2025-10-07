@@ -42,7 +42,7 @@ class RestComicCategoryController extends AbstractController
         string $comicCode,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1])] int $page = 1,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1, 'max_range' => 30])] int $limit = 10,
-        #[HttpKernel\MapQueryParameter] string $order = null
+        #[HttpKernel\MapQueryParameter] string | null $order = null
     ): Response {
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
 
@@ -51,8 +51,8 @@ class RestComicCategoryController extends AbstractController
         $criteria['categoryTypeCodes'] = $queries->all('categoryTypeCode', 'categoryTypeCodes');
         $orderBy = \array_map([OrderByDto::class, 'parse'], $queries->all('orderBy', 'orderBys'));
         if ($order != null) {
-            \array_unshift($orderBy, new OrderByDto('categoryCode', $order));
             \array_unshift($orderBy, new OrderByDto('categoryTypeCode', $order));
+            \array_unshift($orderBy, new OrderByDto('categoryCode', $order));
         }
         $offset = $limit * ($page - 1);
 

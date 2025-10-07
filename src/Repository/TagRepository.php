@@ -25,9 +25,7 @@ class TagRepository extends ServiceEntityRepository
         ?int $offset = null
     ): array {
         $query = $this->createQueryBuilder('t')
-            ->leftJoin('t.type', 'tt')->addSelect('tt')
-            ->leftJoin('t.link', 'tl')->addSelect('tl')
-            ->leftJoin('tl.website', 'tlw')->addSelect('tlw');
+            ->leftJoin('t.type', 'tt')->addSelect('tt');
 
         foreach ($criteria as $key => $val) {
             $val = \array_unique($val);
@@ -52,17 +50,11 @@ class TagRepository extends ServiceEntityRepository
             foreach ($orderBy as $key => $val) {
                 if (!($val instanceof OrderByDto)) continue;
 
-                if ($key > 7) break;
+                if ($key > 5) break;
 
                 switch ($val->name) {
                     case 'typeCode':
                         $val->name = 'tt.code';
-                        break;
-                    case 'linkWebsiteHost':
-                        $val->name = 'clw.host';
-                        break;
-                    case 'linkRelativeReference':
-                        $val->name = 'cl.relativeReference';
                         break;
                     case 'createdAt':
                     case 'updatedAt':

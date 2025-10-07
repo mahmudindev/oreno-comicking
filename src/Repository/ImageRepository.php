@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Entity\ComicExternal;
+use App\Entity\Image;
 use App\Model\OrderByDto;
 use App\Util\Href;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -10,13 +10,13 @@ use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<ComicExternal>
+ * @extends ServiceEntityRepository<Image>
  */
-class ComicExternalRepository extends ServiceEntityRepository
+class ImageRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, ComicExternal::class);
+        parent::__construct($registry, Image::class);
     }
 
     public function findByCustom(
@@ -25,37 +25,24 @@ class ComicExternalRepository extends ServiceEntityRepository
         ?int $limit = null,
         ?int $offset = null
     ): array {
-        $query = $this->createQueryBuilder('c')
-            ->leftJoin('c.comic', 'cc')->addSelect('cc')
-            ->leftJoin('c.link', 'cl')->addSelect('cl')
-            ->leftJoin('cl.website', 'clw')->addSelect('clw');
+        $query = $this->createQueryBuilder('i')
+            ->leftJoin('i.link', 'il')->addSelect('il')
+            ->leftJoin('il.website', 'ilw')->addSelect('ilw');
 
         foreach ($criteria as $key => $val) {
             $val = \array_unique($val);
 
             switch ($key) {
-                case 'comicCodes':
-                    $c = \count($val);
-                    if ($c < 1) break;
-
-                    if ($c == 1) {
-                        $query->andWhere('cc.code = :comicCode');
-                        $query->setParameter('comicCode', $val[0]);
-                        break;
-                    }
-                    $query->andWhere('cc.code IN (:comicCodes)');
-                    $query->setParameter('comicCodes', $val);
-                    break;
                 case 'linkWebsiteHosts':
                     $c = \count($val);
                     if ($c < 1) break;
 
                     if ($c == 1) {
-                        $query->andWhere('clw.host = :linkWebsiteHost');
+                        $query->andWhere('ilw.host = :linkWebsiteHost');
                         $query->setParameter('linkWebsiteHost', $val[0]);
                         break;
                     }
-                    $query->andWhere('clw.host IN (:linkWebsiteHosts)');
+                    $query->andWhere('ilw.host IN (:linkWebsiteHosts)');
                     $query->setParameter('linkWebsiteHosts', $val);
                     break;
                 case 'linkRelativeReferences':
@@ -74,11 +61,11 @@ class ComicExternalRepository extends ServiceEntityRepository
                     }
 
                     if ($c == 1) {
-                        $query->andWhere('cl.relativeReference = :linkRelativeReference');
+                        $query->andWhere('il.relativeReference = :linkRelativeReference');
                         $query->setParameter('linkRelativeReference', $val[0]);
                         break;
                     }
-                    $query->andWhere('cl.relativeReference IN (:linkRelativeReferences)');
+                    $query->andWhere('il.relativeReference IN (:linkRelativeReferences)');
                     $query->setParameter('linkRelativeReferences', $val);
                     break;
                 case 'linkHREFs':
@@ -89,7 +76,7 @@ class ComicExternalRepository extends ServiceEntityRepository
                     foreach ($val as $k => $v) {
                         $href = new Href($v);
 
-                        $qExOr->add('clw.host = :linkHREFA' . $k . ' AND ' . 'cl.relativeReference = :linkHREFB' . $k);
+                        $qExOr->add('ilw.host = :linkHREFA' . $k . ' AND ' . 'il.relativeReference = :linkHREFB' . $k);
                         $query->setParameter('linkHREFA' . $k, $href->getHost());
                         $query->setParameter('linkHREFB' . $k, $href->getRelativeReference() ?? '');
                     }
@@ -102,26 +89,19 @@ class ComicExternalRepository extends ServiceEntityRepository
             foreach ($orderBy as $key => $val) {
                 if (!($val instanceof OrderByDto)) continue;
 
-                if ($key > 8) break;
+                if ($key > 5) break;
 
                 switch ($val->name) {
-                    case 'comicCode':
-                        $val->name = 'cc.code';
-                        break;
                     case 'linkWebsiteHost':
-                        $val->name = 'clw.host';
-                        break;
-                    case 'linkWebsiteName':
-                        $val->name = 'clw.name';
+                        $val->name = 'ilw.host';
                         break;
                     case 'linkRelativeReference':
-                        $val->name = 'cl.relativeReference';
+                        $val->name = 'il.relativeReference';
                         break;
                     case 'createdAt':
                     case 'updatedAt':
-                    case 'isOfficial':
-                    case 'isCommunity':
-                        $val->name = 'c.' . $val->name;
+                    case 'ulid':
+                        $val->name = 'i.' . $val->name;
                         break;
                     default:
                         continue 2;
@@ -166,8 +146,7 @@ class ComicExternalRepository extends ServiceEntityRepository
                 $query->addOrderBy($val->name, $val->order);
             }
         } else {
-            $query->orderBy('clw.name');
-            $query->orderBy('cl.relativeReference');
+            $query->orderBy('i.ulid');
         }
 
         $query->setMaxResults($limit);
@@ -178,25 +157,19 @@ class ComicExternalRepository extends ServiceEntityRepository
 
     public function countCustom(array $criteria = []): int
     {
-        $query = $this->createQueryBuilder('c')
-            ->select('count(c.id)');
+        $query = $this->createQueryBuilder('i')
+            ->select('count(i.id)');
 
         $q01 = false;
         $q01Func = function (bool &$c, QueryBuilder &$q): void {
             if ($c) return;
-            $q->leftJoin('c.comic', 'cc');
+            $q->leftJoin('i.link', 'il');
             $c = true;
         };
         $q02 = false;
         $q02Func = function (bool &$c, QueryBuilder &$q): void {
             if ($c) return;
-            $q->leftJoin('c.link', 'cl');
-            $c = true;
-        };
-        $q03 = false;
-        $q03Func = function (bool &$c, QueryBuilder &$q): void {
-            if ($c) return;
-            $q->leftJoin('cl.website', 'clw');
+            $q->leftJoin('il.website', 'ilw');
             $c = true;
         };
 
@@ -204,40 +177,26 @@ class ComicExternalRepository extends ServiceEntityRepository
             $val = \array_unique($val);
 
             switch ($key) {
-                case 'comicCodes':
-                    $c = \count($val);
-                    if ($c < 1) break;
-
-                    $q01Func($q01, $query);
-
-                    if ($c == 1) {
-                        $query->andWhere('cc.code = :comicCode');
-                        $query->setParameter('comicCode', $val[0]);
-                        break;
-                    }
-                    $query->andWhere('cc.code IN (:comicCodes)');
-                    $query->setParameter('comicCodes', $val);
-                    break;
                 case 'linkWebsiteHosts':
                     $c = \count($val);
                     if ($c < 1) break;
 
+                    $q01Func($q01, $query);
                     $q02Func($q02, $query);
-                    $q03Func($q03, $query);
 
                     if ($c == 1) {
-                        $query->andWhere('clw.host = :linkWebsiteHost');
+                        $query->andWhere('ilw.host = :linkWebsiteHost');
                         $query->setParameter('linkWebsiteHost', $val[0]);
                         break;
                     }
-                    $query->andWhere('clw.host IN (:linkWebsiteHosts)');
+                    $query->andWhere('ilw.host IN (:linkWebsiteHosts)');
                     $query->setParameter('linkWebsiteHosts', $val);
                     break;
                 case 'linkRelativeReferences':
                     $c = \count($val);
                     if ($c < 1) break;
 
-                    $q02Func($q02, $query);
+                    $q01Func($q01, $query);
 
                     foreach ($val as $k => $v) {
                         switch ($v) {
@@ -251,25 +210,25 @@ class ComicExternalRepository extends ServiceEntityRepository
                     }
 
                     if ($c == 1) {
-                        $query->andWhere('cl.relativeReference = :linkRelativeReference');
+                        $query->andWhere('il.relativeReference = :linkRelativeReference');
                         $query->setParameter('linkRelativeReference', $val[0]);
                         break;
                     }
-                    $query->andWhere('cl.relativeReference IN (:linkRelativeReferences)');
+                    $query->andWhere('il.relativeReference IN (:linkRelativeReferences)');
                     $query->setParameter('linkRelativeReferences', $val);
                     break;
                 case 'linkHREFs':
                     $c = \count($val);
                     if ($c < 1) break;
 
+                    $q01Func($q01, $query);
                     $q02Func($q02, $query);
-                    $q03Func($q03, $query);
 
                     $qExOr = $query->expr()->orX();
                     foreach ($val as $k => $v) {
                         $href = new Href($v);
 
-                        $qExOr->add('clw.host = :linkHREFA' . $k . ' AND ' . 'cl.relativeReference = :linkHREFB' . $k);
+                        $qExOr->add('ilw.host = :linkHREFA' . $k . ' AND ' . 'il.relativeReference = :linkHREFB' . $k);
                         $query->setParameter('linkHREFA' . $k, $href->getHost());
                         $query->setParameter('linkHREFB' . $k, $href->getRelativeReference() ?? '');
                     }

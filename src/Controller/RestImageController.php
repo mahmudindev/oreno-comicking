@@ -2,31 +2,37 @@
 
 namespace App\Controller;
 
-use App\Entity\ComicRelationKind;
+use App\Entity\Image;
 use App\Model\OrderByDto;
-use App\Repository\ComicRelationKindRepository;
+use App\Repository\ImageRepository;
+use App\Repository\LinkRepository;
+use App\Repository\WebsiteRepository;
 use App\Util\UrlQuery;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute as HttpKernel;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
 use Symfony\Component\Routing\Attribute as Routing;
+use Symfony\Component\Uid\Ulid;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Routing\Route(
-    path: '/api/rest/comic-relation-types',
-    name: 'rest_comicrelationtype_'
+    path: '/api/rest/images',
+    name: 'rest_image_'
 )]
-class RestComicRelationKindController extends AbstractController
+class RestImageController extends AbstractController
 {
     public function __construct(
         private readonly ValidatorInterface $validator,
         private readonly EntityManagerInterface $entityManager,
-        private readonly ComicRelationKindRepository $comicRelationKindRepository
+        private readonly ImageRepository $imageRepository,
+        private readonly LinkRepository $linkRepository,
+        private readonly WebsiteRepository $websiteRepository
     ) {}
 
     #[Routing\Route('', name: 'list', methods: [Request::METHOD_GET])]
@@ -39,19 +45,22 @@ class RestComicRelationKindController extends AbstractController
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
 
         $criteria = [];
+        $criteria['linkWebsiteHosts'] = $queries->all('linkWebsiteHost', 'linkWebsiteHosts');
+        $criteria['linkRelativeReferences'] = $queries->all('linkRelativeReference', 'linkRelativeReferences');
+        $criteria['linkHREFs'] = $queries->all('linkHREF', 'linkHREFs');
         $orderBy = \array_map([OrderByDto::class, 'parse'], $queries->all('orderBy', 'orderBys'));
-        if ($order != null) {
-            \array_unshift($orderBy, new OrderByDto('code', $order));
+        if ($order) {
+            \array_unshift($orderBy, new OrderByDto('ulid', $order));
         }
         $offset = $limit * ($page - 1);
 
-        $result = $this->comicRelationKindRepository->findByCustom($criteria, $orderBy, $limit, $offset);
+        $result = $this->imageRepository->findByCustom($criteria, $orderBy, $limit, $offset);
 
         $headers = [];
-        $headers['X-Total-Count'] = $this->comicRelationKindRepository->countCustom($criteria);
+        $headers['X-Total-Count'] = $this->imageRepository->countCustom($criteria);
         $headers['X-Pagination-Limit'] = $limit;
 
-        $response = $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['comicRelationType']]);
+        $response = $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['image']]);
 
         $response->setEtag(\crc32($response->getContent()));
         foreach ($result as $v) {
@@ -71,12 +80,21 @@ class RestComicRelationKindController extends AbstractController
     public function post(
         Request $request
     ): Response {
-        $result = new ComicRelationKind();
+        $result = new Image();
         switch ($request->headers->get('Content-Type')) {
             case 'application/json':
                 $content = \json_decode($request->getContent(), true);
-                if (isset($content['code'])) $result->setCode($content['code']);
-                if (isset($content['name'])) $result->setName($content['name']);
+                if (isset($content['linkWebsiteHost'])) {
+                    $r1 = $this->linkRepository->findOneBy([
+                        'website' => $this->websiteRepository->findOneBy([
+                            'host' => $content['linkWebsiteHost']
+                        ]),
+                        'relativeReference' => $content['linkRelativeReference'] ?? '/'
+                    ]);
+                    if (!$r1) throw new BadRequestException('Link does not exists.');
+                    $result->setLink($r1);
+                }
+                if (isset($content['alternativeText'])) $result->setAlternativeText($content['alternativeText']);
                 break;
             default:
                 throw new UnsupportedMediaTypeHttpException();
@@ -87,20 +105,24 @@ class RestComicRelationKindController extends AbstractController
         $this->entityManager->flush();
 
         $headers = [];
-        $headers['Location'] = $this->generateUrl('rest_comicrelationtype_get', ['code' => $result->getCode()]);
+        $headers['Location'] = $this->generateUrl('rest_image_get', [
+            'ulid' => $result->getUlid()
+        ]);
 
-        return $this->json($result, Response::HTTP_CREATED, $headers, ['groups' => ['comicRelationType']]);
+        return $this->json($result, Response::HTTP_CREATED, $headers, ['groups' => ['image']]);
     }
 
-    #[Routing\Route('/{code}', name: 'get', methods: [Request::METHOD_GET])]
+    #[Routing\Route('/{ulid}', name: 'get', methods: [Request::METHOD_GET])]
     public function get(
         Request $request,
-        string $code
+        Ulid $ulid
     ): Response {
-        $result = $this->comicRelationKindRepository->findOneBy(['code' => $code]);
-        if (!$result) throw new NotFoundHttpException('Comic Relation Type not found.');
+        $result = $this->imageRepository->findOneBy([
+            'ulid' => $ulid
+        ]);
+        if (!$result) throw new NotFoundHttpException('Image not found.');
 
-        $response = $this->json($result, Response::HTTP_OK, [], ['groups' => ['comicRelationType']]);
+        $response = $this->json($result, Response::HTTP_OK, [], ['groups' => ['image']]);
 
         $response->setEtag(\crc32($response->getContent()));
         $response->setLastModified($result->getUpdatedAt() ?? $result->getCreatedAt());
@@ -110,18 +132,29 @@ class RestComicRelationKindController extends AbstractController
         return $response;
     }
 
-    #[Routing\Route('/{code}', name: 'patch', methods: [Request::METHOD_PATCH])]
+    #[Routing\Route('/{ulid}', name: 'patch', methods: [Request::METHOD_PATCH])]
     public function patch(
         Request $request,
-        string $code
+        Ulid $ulid
     ): Response {
-        $result = $this->comicRelationKindRepository->findOneBy(['code' => $code]);
-        if (!$result) throw new NotFoundHttpException('Comic Relation Type not found.');
+        $result = $this->imageRepository->findOneBy([
+            'ulid' => $ulid
+        ]);
+        if (!$result) throw new NotFoundHttpException('Image not found.');
         switch ($request->headers->get('Content-Type')) {
             case 'application/json':
                 $content = \json_decode($request->getContent(), true);
-                if (isset($content['code'])) $result->setCode($content['code']);
-                if (isset($content['name'])) $result->setName($content['name']);
+                if (isset($content['linkWebsiteHost'])) {
+                    $r1 = $this->linkRepository->findOneBy([
+                        'website' => $this->websiteRepository->findOneBy([
+                            'host' => $content['linkWebsiteHost']
+                        ]),
+                        'relativeReference' => $content['linkRelativeReference'] ?? '/'
+                    ]);
+                    if (!$r1) throw new BadRequestException('Link does not exists.');
+                    $result->setLink($r1);
+                }
+                if (isset($content['alternativeText'])) $result->setAlternativeText($content['alternativeText']);
                 break;
             default:
                 throw new UnsupportedMediaTypeHttpException();
@@ -131,17 +164,21 @@ class RestComicRelationKindController extends AbstractController
         $this->entityManager->flush();
 
         $headers = [];
-        $headers['Location'] = $this->generateUrl('rest_comicrelationtype_get', ['code' => $result->getCode()]);
+        $headers['Location'] = $this->generateUrl('rest_image_get', [
+            'ulid' => $result->getUlid()
+        ]);
 
-        return $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['comicRelationType']]);
+        return $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['image']]);
     }
 
-    #[Routing\Route('/{code}', name: 'delete', methods: [Request::METHOD_DELETE])]
+    #[Routing\Route('/{ulid}', name: 'delete', methods: [Request::METHOD_DELETE])]
     public function delete(
-        string $code
+        Ulid $ulid
     ): Response {
-        $result = $this->comicRelationKindRepository->findOneBy(['code' => $code]);
-        if (!$result) throw new NotFoundHttpException('Comic Relation Type not found.');
+        $result = $this->imageRepository->findOneBy([
+            'ulid' => $ulid
+        ]);
+        if (!$result) throw new NotFoundHttpException('Image not found.');
         $this->entityManager->remove($result);
         $this->entityManager->flush();
 

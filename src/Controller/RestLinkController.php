@@ -38,7 +38,7 @@ class RestLinkController extends AbstractController
         Request $request,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1])] int $page = 1,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1, 'max_range' => 30])] int $limit = 10,
-        #[HttpKernel\MapQueryParameter] string $order = null
+        #[HttpKernel\MapQueryParameter] string | null $order = null
     ): Response {
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
 
@@ -114,7 +114,7 @@ class RestLinkController extends AbstractController
         $pathParams = new Href($href);
         $result = $this->linkRepository->findOneBy([
             'website' => $this->websiteRepository->findOneBy(['host' => $pathParams->getHost()]),
-            'relativeReference' => $pathParams->getRelativeReference() ?? ''
+            'relativeReference' => $pathParams->getRelativeReference() ?? '/'
         ]);
         if (!$result) throw new NotFoundHttpException('Link not found.');
 
@@ -136,7 +136,7 @@ class RestLinkController extends AbstractController
         $pathParams = new Href($href);
         $result = $this->linkRepository->findOneBy([
             'website' => $this->websiteRepository->findOneBy(['host' => $pathParams->getHost()]),
-            'relativeReference' => $pathParams->getRelativeReference() ?? ''
+            'relativeReference' => $pathParams->getRelativeReference() ?? '/'
         ]);
         if (!$result) throw new NotFoundHttpException('Link not found.');
         switch ($request->headers->get('Content-Type')) {
@@ -171,7 +171,7 @@ class RestLinkController extends AbstractController
         $pathParams = new Href($href);
         $result = $this->linkRepository->findOneBy([
             'website' => $this->websiteRepository->findOneBy(['host' => $pathParams->getHost()]),
-            'relativeReference' => $pathParams->getRelativeReference() ?? ''
+            'relativeReference' => $pathParams->getRelativeReference() ?? '/'
         ]);
         if (!$result) throw new NotFoundHttpException('Link not found.');
         $this->entityManager->remove($result);

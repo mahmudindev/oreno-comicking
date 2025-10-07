@@ -33,12 +33,13 @@ class PersonRepository extends ServiceEntityRepository
             foreach ($orderBy as $key => $val) {
                 if (!($val instanceof OrderByDto)) continue;
 
-                if ($key > 3) break;
+                if ($key > 4) break;
 
                 switch ($val->name) {
                     case 'createdAt':
                     case 'updatedAt':
                     case 'code':
+                    case 'name':
                         $val->name = 'p.' . $val->name;
                         break;
                     default:

@@ -45,10 +45,6 @@ class Tag
     #[Serializer\Groups(['tag'])]
     private ?string $name = null;
 
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name: 'link_id', onDelete: 'SET NULL')]
-    private ?Link $link = null;
-
     #[ORM\PrePersist]
     public function onPrePersist(PrePersistEventArgs $args)
     {
@@ -132,38 +128,6 @@ class Tag
     public function setName(string $name): static
     {
         $this->name = $name;
-
-        return $this;
-    }
-
-    public function getLink(): ?Link
-    {
-        return $this->link;
-    }
-
-    #[Serializer\Groups(['tag'])]
-    public function getLinkWebsiteHost(): ?string
-    {
-        if ($this->link == null) {
-            return null;
-        }
-
-        return $this->link->getWebsiteHost();
-    }
-
-    #[Serializer\Groups(['tag'])]
-    public function getLinkRelativeReference(): ?string
-    {
-        if ($this->link == null) {
-            return null;
-        }
-
-        return $this->link->getRelativeReference();
-    }
-
-    public function setLink(?Link $link): static
-    {
-        $this->link = $link;
 
         return $this;
     }

@@ -26,7 +26,6 @@ class ComicChapterRepository extends ServiceEntityRepository
     ): array {
         $query = $this->createQueryBuilder('c')
             ->leftJoin('c.comic', 'cc')->addSelect('cc')
-            ->leftJoin('c.thumbnail', 'ct')->addSelect('ct')
             ->leftJoin('c.volume', 'cv')->addSelect('cv');
 
         foreach ($criteria as $key => $val) {

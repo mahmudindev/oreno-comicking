@@ -12,7 +12,7 @@
     >
         {% set comic_covers = funcComicKingApp.comicCovers(comic.code, [], 1) %}
         {% if comic_covers|length > 0 %}
-            {% set comic_cover = comic_covers[0] %}
+            {% set comic_cover = funcComicKingApp.image(comic_covers[0].imageULID) %}
         {% else %}
             {% set comic_cover = null %}
         {% endif %}

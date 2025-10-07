@@ -14,7 +14,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: ComicVolumeTitleRepository::class)]
 #[ORM\Table(name: 'comic_volume_title')]
 #[ORM\UniqueConstraint(columns: ['volume_id', 'ulid'])]
-#[ORM\UniqueConstraint(columns: ['volume_id', 'content'])]
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Cache(usage: 'NONSTRICT_READ_WRITE')]
 class ComicVolumeTitle
@@ -46,7 +45,7 @@ class ComicVolumeTitle
     #[Assert\NotNull]
     private ?Language $language = null;
 
-    #[ORM\Column(length: 255, options: ['collation' => 'utf8mb4_bin'])]
+    #[ORM\Column(length: 255)]
     #[Assert\NotBlank, Assert\Length(min: 1, max: 255)]
     #[Serializer\Groups(['comic', 'comicVolume', 'comicVolumeTitle'])]
     private ?string $content = null;

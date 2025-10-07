@@ -45,7 +45,7 @@ class RestComicChapterTitleController extends AbstractController
         string $chapterNV,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1])] int $page = 1,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1, 'max_range' => 30])] int $limit = 10,
-        #[HttpKernel\MapQueryParameter] string $order = null
+        #[HttpKernel\MapQueryParameter]string | null $order = null
     ): Response {
         $pathParams = RestComicChapterController::parseSlug($chapterNV);
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
@@ -92,7 +92,7 @@ class RestComicChapterTitleController extends AbstractController
         $parent = $this->comicChapterRepository->findOneBy([
             'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
             'number' => $pathParams[0],
-            'version' => $pathParams[1] ?? ''
+            'version' => $pathParams[1]
         ]);
         if (!$parent) throw new BadRequestException('Comic Chapter does not exists.');
         $result = new ComicChapterTitle();
@@ -139,7 +139,7 @@ class RestComicChapterTitleController extends AbstractController
             'chapter' => $this->comicChapterRepository->findOneBy([
                 'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
                 'number' => $pathParams[0],
-                'version' => $pathParams[1] ?? ''
+                'version' => $pathParams[1]
             ]),
             'ulid' => $ulid
         ]);
@@ -167,7 +167,7 @@ class RestComicChapterTitleController extends AbstractController
             'chapter' => $this->comicChapterRepository->findOneBy([
                 'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
                 'number' => $pathParams[0],
-                'version' => $pathParams[1] ?? ''
+                'version' => $pathParams[1]
             ]),
             'ulid' => $ulid
         ]);
@@ -212,7 +212,7 @@ class RestComicChapterTitleController extends AbstractController
             'chapter' => $this->comicChapterRepository->findOneBy([
                 'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
                 'number' => $pathParams[0],
-                'version' => $pathParams[1] ?? ''
+                'version' => $pathParams[1]
             ]),
             'ulid' => $ulid
         ]);

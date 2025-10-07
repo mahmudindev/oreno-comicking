@@ -13,8 +13,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ComicCoverRepository::class)]
 #[ORM\Table(name: 'comic_cover')]
-#[ORM\UniqueConstraint(columns: ['comic_id', 'ulid'])]
-#[ORM\UniqueConstraint(columns: ['comic_id', 'link_id'])]
+#[ORM\UniqueConstraint(columns: ['comic_id', 'image_id'])]
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Cache(usage: 'NONSTRICT_READ_WRITE')]
 class ComicCover
@@ -37,25 +36,15 @@ class ComicCover
     #[Assert\NotNull]
     private ?Comic $comic = null;
 
-    #[ORM\Column(type: 'ulid')]
-    #[Serializer\Groups(['comic', 'comicCover'])]
-    private ?Ulid $ulid = null;
-
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name: 'link_id', nullable: false, onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(name: 'image_id', nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull]
-    private ?Link $link = null;
-
-    #[ORM\Column(length: 64, nullable: true)]
-    #[Assert\NotBlank(allowNull: true), Assert\Length(min: 1, max: 64)]
-    #[Serializer\Groups(['comic', 'comicCover'])]
-    private ?string $hint = null;
+    private ?Image $image = null;
 
     #[ORM\PrePersist]
     public function onPrePersist(PrePersistEventArgs $args)
     {
         $this->setCreatedAt(new \DateTimeImmutable());
-        $this->setUlid(new Ulid());
     }
 
     #[ORM\PreUpdate]
@@ -115,58 +104,24 @@ class ComicCover
         return $this;
     }
 
-    public function getUlid(): ?Ulid
+    public function getImage(): ?Image
     {
-        return $this->ulid;
-    }
-
-    public function setUlid(Ulid $ulid): static
-    {
-        $this->ulid = $ulid;
-
-        return $this;
-    }
-
-    public function getLink(): ?Link
-    {
-        return $this->link;
+        return $this->image;
     }
 
     #[Serializer\Groups(['comic', 'comicCover'])]
-    public function getLinkWebsiteHost(): ?string
+    public function getImageULID(): ?Ulid
     {
-        if ($this->link == null) {
+        if ($this->image == null) {
             return null;
         }
 
-        return $this->link->getWebsiteHost();
+        return $this->image->getUlid();
     }
 
-    #[Serializer\Groups(['comic', 'comicCover'])]
-    public function getLinkRelativeReference(): ?string
+    public function setImage(?Image $image): static
     {
-        if ($this->link == null) {
-            return null;
-        }
-
-        return $this->link->getRelativeReference();
-    }
-
-    public function setLink(?Link $link): static
-    {
-        $this->link = $link;
-
-        return $this;
-    }
-
-    public function getHint(): ?string
-    {
-        return $this->hint;
-    }
-
-    public function setHint(?string $hint): static
-    {
-        $this->hint = $hint;
+        $this->image = $image;
 
         return $this;
     }

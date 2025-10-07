@@ -7,12 +7,14 @@ use App\Repository\ComicCoverRepository;
 use App\Repository\ComicExternalRepository;
 use App\Repository\ComicSynopsisRepository;
 use App\Repository\ComicTitleRepository;
+use App\Repository\ImageRepository;
 use App\Repository\LanguageRepository;
 
 class ComicKingApp
 {
     public function __construct(
         private readonly LanguageRepository $languageRepository,
+        private readonly ImageRepository $imageRepository,
         private readonly ComicTitleRepository $comicTitleRepository,
         private readonly ComicCoverRepository $comicCoverRepository,
         private readonly ComicSynopsisRepository $comicSynopsisRepository,
@@ -33,7 +35,7 @@ class ComicKingApp
         string $comicCode,
         ?array $langs = [],
         ?int $limit = null
-    ): ?array {
+    ): array {
         if (!$langs) {
             $langs = ['en'];
         }
@@ -56,7 +58,7 @@ class ComicKingApp
         string $comicCode,
         ?array $hints = [],
         ?int $limit = null
-    ): ?array {
+    ): array {
         return $this->comicCoverRepository->findByCustom(
             ['comicCodes' => [$comicCode]],
             [
@@ -74,7 +76,7 @@ class ComicKingApp
         ?array $sources = [],
         ?array $langs = [],
         ?int $limit = null
-    ): ?array {
+    ): array {
         if (!$langs) {
             $langs = ['en'];
         }
@@ -97,7 +99,7 @@ class ComicKingApp
     public function getComicExternals(
         string $comicCode,
         ?int $limit = null
-    ): ?array {
+    ): array {
         return $this->comicExternalRepository->findByCustom(
             ['comicCodes' => [$comicCode]],
             [
@@ -109,6 +111,14 @@ class ComicKingApp
             ],
             $limit
         );
+    }
+
+    public function getImage(
+        string $ulid
+    ): ?object {
+        return $this->imageRepository->findOneBy([
+            'ulid' => $ulid
+        ]);
     }
 
     public function getRecommendedLangs(
