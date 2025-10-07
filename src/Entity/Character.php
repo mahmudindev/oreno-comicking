@@ -31,14 +31,22 @@ class Character
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(length: 12, unique: true, options: ['collation' => 'utf8mb4_bin'])]
-    #[Assert\NotBlank, Assert\Length(12)]
+    #[Assert\NotBlank(allowNull: true), Assert\Length(12)]
     #[Serializer\Groups(['character'])]
     private ?string $code = null;
+
+    #[ORM\Column(length: 64)]
+    #[Assert\NotBlank, Assert\Length(min: 1, max: 64)]
+    #[Serializer\Groups(['character'])]
+    private ?string $name = null;
 
     #[ORM\PrePersist]
     public function onPrePersist(PrePersistEventArgs $args)
     {
         $this->setCreatedAt(new \DateTimeImmutable());
+        if ($this->getCode() == null) {
+            $this->setCode(StringUtil::randomString(12));
+        }
     }
 
     #[ORM\PreUpdate]
@@ -84,6 +92,18 @@ class Character
     public function setCode(string $code): static
     {
         $this->code = $code;
+
+        return $this;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): static
+    {
+        $this->name = $name;
 
         return $this;
     }

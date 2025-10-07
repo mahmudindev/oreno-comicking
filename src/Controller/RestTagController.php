@@ -41,7 +41,7 @@ class RestTagController extends AbstractController
         Request $request,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1])] int $page = 1,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1, 'max_range' => 30])] int $limit = 10,
-        #[HttpKernel\MapQueryParameter] string $order = null
+        #[HttpKernel\MapQueryParameter] string | null $order = null
     ): Response {
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
 
@@ -91,16 +91,6 @@ class RestTagController extends AbstractController
                 }
                 if (isset($content['code'])) $result->setCode($content['code']);
                 if (isset($content['name'])) $result->setName($content['name']);
-                if (isset($content['linkWebsiteHost'])) {
-                    $r2 = $this->linkRepository->findOneBy([
-                        'website' => $this->websiteRepository->findOneBy([
-                            'host' => $content['linkWebsiteHost']
-                        ]),
-                        'relativeReference' => $content['linkRelativeReference'] ?? ''
-                    ]);
-                    if (!$r2) throw new BadRequestException('Link does not exists.');
-                    $result->setLink($r2);
-                }
                 break;
             default:
                 throw new UnsupportedMediaTypeHttpException();
@@ -126,7 +116,7 @@ class RestTagController extends AbstractController
         string $code
     ): Response {
         $result = $this->tagRepository->findOneBy([
-            'type' => $this->tagRepository->findOneBy(['code' => $typeCode]),
+            'type' => $this->tagKindRepository->findOneBy(['code' => $typeCode]),
             'code' => $code
         ]);
         if (!$result) throw new NotFoundHttpException('Tag not found.');
@@ -162,20 +152,6 @@ class RestTagController extends AbstractController
                 }
                 if (isset($content['code'])) $result->setCode($content['code']);
                 if (isset($content['name'])) $result->setName($content['name']);
-                if (isset($content['linkWebsiteHost'])) {
-                    if ($content['linkWebsiteHost'] == null) {
-                        $result->setLink(null);
-                    } else {
-                        $r2 = $this->linkRepository->findOneBy([
-                            'website' => $this->websiteRepository->findOneBy([
-                                'host' => $content['linkWebsiteHost']
-                            ]),
-                            'relativeReference' => $content['linkRelativeReference'] ?? ''
-                        ]);
-                        if (!$r2) throw new BadRequestException('Link does not exists.');
-                        $result->setLink($r2);
-                    }
-                }
                 break;
             default:
                 throw new UnsupportedMediaTypeHttpException();

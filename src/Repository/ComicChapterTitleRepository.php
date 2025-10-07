@@ -61,17 +61,6 @@ class ComicChapterTitleRepository extends ServiceEntityRepository
                     $c = \count($val);
                     if ($c < 1) break;
 
-                    foreach ($val as $k => $v) {
-                        switch ($v) {
-                            case null:
-                                $val[$k] = '';
-                                break;
-                            case '':
-                                $val[$k] = null;
-                                break;
-                        }
-                    }
-
                     if ($c == 1) {
                         $query->andWhere('cc.version = :chapterVersion');
                         $query->setParameter('chapterVersion', $val[0]);
@@ -243,17 +232,6 @@ class ComicChapterTitleRepository extends ServiceEntityRepository
                     if ($c < 1) break;
 
                     $q01Func($q01, $query);
-
-                    foreach ($val as $k => $v) {
-                        switch ($v) {
-                            case null:
-                                $val[$k] = '';
-                                break;
-                            case '':
-                                $val[$k] = null;
-                                break;
-                        }
-                    }
 
                     if ($c == 1) {
                         $query->andWhere('cc.version = :chapterVersion');

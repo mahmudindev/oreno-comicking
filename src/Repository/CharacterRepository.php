@@ -33,12 +33,13 @@ class CharacterRepository extends ServiceEntityRepository
             foreach ($orderBy as $key => $val) {
                 if (!($val instanceof OrderByDto)) continue;
 
-                if ($key > 3) break;
+                if ($key > 4) break;
 
                 switch ($val->name) {
                     case 'createdAt':
                     case 'updatedAt':
                     case 'code':
+                    case 'name':
                         $val->name = 'c.' . $val->name;
                         break;
                     default:

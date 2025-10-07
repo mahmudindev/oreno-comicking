@@ -8,12 +8,10 @@ use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation as Serializer;
-use Symfony\Component\Uid\Ulid;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ComicExternalRepository::class)]
 #[ORM\Table(name: 'comic_external')]
-#[ORM\UniqueConstraint(columns: ['comic_id', 'ulid'])]
 #[ORM\UniqueConstraint(columns: ['comic_id', 'link_id'])]
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Cache(usage: 'NONSTRICT_READ_WRITE')]
@@ -37,10 +35,6 @@ class ComicExternal
     #[Assert\NotNull]
     private ?Comic $comic = null;
 
-    #[ORM\Column(type: 'ulid')]
-    #[Serializer\Groups(['comic', 'comicExternal'])]
-    private ?Ulid $ulid = null;
-
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name: 'link_id', nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull]
@@ -58,7 +52,6 @@ class ComicExternal
     public function onPrePersist(PrePersistEventArgs $args)
     {
         $this->setCreatedAt(new \DateTimeImmutable());
-        $this->setUlid(new Ulid());
     }
 
     #[ORM\PreUpdate]
@@ -114,18 +107,6 @@ class ComicExternal
     public function setComic(?Comic $comic): static
     {
         $this->comic = $comic;
-
-        return $this;
-    }
-
-    public function getUlid(): ?Ulid
-    {
-        return $this->ulid;
-    }
-
-    public function setUlid(Ulid $ulid): static
-    {
-        $this->ulid = $ulid;
 
         return $this;
     }

@@ -55,7 +55,7 @@ class ComicRepository extends ServiceEntityRepository
         $qZ = false;
         $qZFunc = function (bool &$c, QueryBuilder &$q): void {
             if ($c) return;
-            $q->addGroupBy('c.code');
+            $q->addGroupBy('c.id');
             $c = true;
         };
 
@@ -63,85 +63,57 @@ class ComicRepository extends ServiceEntityRepository
             $val = \array_unique($val);
 
             switch ($key) {
-                case 'externals':
+                case 'externalLinkWebsiteHosts':
                     $c = \count($val);
                     if ($c < 1) break;
 
                     $q1Func($q1, $query);
+                    $q11Func($q11, $query);
+                    $q111Func($q111, $query);
                     $qZFunc($qZ, $query);
 
-                    $w = [];
-                    foreach ($val as $v) {
-                        foreach ($v as $key => $val) {
-                            if (!isset($w[$key])) {
-                                $w[$key] = [];
-                            }
-                            \array_push($w[$key], ...$val);
-                        }
+                    if ($c == 1) {
+                        $query->andWhere('ce2lw.host = :externalLinkWebsiteHost');
+                        $query->setParameter('externalLinkWebsiteHost', $val[0]);
+                        break;
                     }
-                    if (\count($w) < 1) break;
+                    $query->andWhere('ce2lw.host IN (:externalLinkWebsiteHosts)');
+                    $query->setParameter('externalLinkWebsiteHosts', $val);
+                    break;
+                case 'externalLinkRelativeReferences':
+                    $c = \count($val);
+                    if ($c < 1) break;
 
-                    foreach ($w as $key => $val) {
-                        switch ($key) {
-                            case 'linkWebsiteHosts':
-                                $c = \count($val);
-                                if ($c < 1) break;
+                    $q1Func($q1, $query);
+                    $q11Func($q11, $query);
+                    $qZFunc($qZ, $query);
 
-                                $q11Func($q11, $query);
-                                $q111Func($q111, $query);
-
-                                if ($c == 1) {
-                                    $query->andWhere('ce2lw.host = :linkWebsiteHost');
-                                    $query->setParameter('linkWebsiteHost', $val[0]);
-                                    break;
-                                }
-                                $query->andWhere('ce2lw.host IN (:linkWebsiteHosts)');
-                                $query->setParameter('linkWebsiteHosts', $val);
-                                break;
-                            case 'linkRelativeReferences':
-                                $c = \count($val);
-                                if ($c < 1) break;
-
-                                $q11Func($q11, $query);
-
-                                foreach ($val as $k => $v) {
-                                    switch ($v) {
-                                        case null:
-                                            $val[$k] = '';
-                                            break;
-                                        case '':
-                                            $val[$k] = null;
-                                            break;
-                                    }
-                                }
-
-                                if ($c == 1) {
-                                    $query->andWhere('ce2l.relativeReference = :linkRelativeReference');
-                                    $query->setParameter('linkRelativeReference', $val[0]);
-                                    break;
-                                }
-                                $query->andWhere('ce2l.relativeReference IN (:linkRelativeReferences)');
-                                $query->setParameter('linkRelativeReferences', $val);
-                                break;
-                            case 'linkHREFs':
-                                $c = \count($val);
-                                if ($c < 1) break;
-
-                                $q11Func($q11, $query);
-                                $q111Func($q111, $query);
-
-                                $qExOr = $query->expr()->orX();
-                                foreach ($val as $k => $v) {
-                                    $href = new Href($v);
-
-                                    $qExOr->add('ce2lw.host = :linkHREFA' . $k . ' AND ' . 'ce2l.relativeReference = :linkHREFB' . $k);
-                                    $query->setParameter('linkHREFA' . $k, $href->getHost());
-                                    $query->setParameter('linkHREFB' . $k, $href->getRelativeReference() ?? '');
-                                }
-                                $query->andWhere($qExOr);
-                                break;
-                        }
+                    if ($c == 1) {
+                        $query->andWhere('ce2l.relativeReference = :externalLinkRelativeReference');
+                        $query->setParameter('externalLinkRelativeReference', $val[0]);
+                        break;
                     }
+                    $query->andWhere('ce2l.relativeReference IN (:externalLinkRelativeReferences)');
+                    $query->setParameter('externalLinkRelativeReferences', $val);
+                    break;
+                case 'externalLinkHREFs':
+                    $c = \count($val);
+                    if ($c < 1) break;
+
+                    $q1Func($q1, $query);
+                    $q11Func($q11, $query);
+                    $q111Func($q111, $query);
+                    $qZFunc($qZ, $query);
+
+                    $qExOr = $query->expr()->orX();
+                    foreach ($val as $k => $v) {
+                        $href = new Href($v);
+
+                        $qExOr->add('ce2lw.host = :hostLinkHREFA' . $k . ' AND ' . 'ce2l.relativeReference = :hostLinkHREFB' . $k);
+                        $query->setParameter('hostLinkHREFA' . $k, $href->getHost());
+                        $query->setParameter('hostLinkHREFB' . $k, $href->getRelativeReference() ?? '');
+                    }
+                    $query->andWhere($qExOr);
                     break;
             }
         }
@@ -250,84 +222,54 @@ class ComicRepository extends ServiceEntityRepository
             $val = \array_unique($val);
 
             switch ($key) {
-                case 'externals':
+                case 'externalLinkWebsiteHosts':
                     $c = \count($val);
                     if ($c < 1) break;
 
                     $q1Func($q1, $query);
+                    $q11Func($q11, $query);
+                    $q111Func($q111, $query);
 
-                    $w = [];
-                    foreach ($val as $v) {
-                        foreach ($v as $key => $val) {
-                            if (!isset($w[$key])) {
-                                $w[$key] = [];
-                            }
-                            \array_push($w[$key], ...$val);
-                        }
+                    if ($c == 1) {
+                        $query->andWhere('ce2lw.host = :externalLinkWebsiteHost');
+                        $query->setParameter('externalLinkWebsiteHost', $val[0]);
+                        break;
                     }
-                    if (\count($w) < 1) break;
+                    $query->andWhere('ce2lw.host IN (:externalLinkWebsiteHosts)');
+                    $query->setParameter('externalLinkWebsiteHosts', $val);
+                    break;
+                case 'externalLinkRelativeReferences':
+                    $c = \count($val);
+                    if ($c < 1) break;
 
-                    foreach ($w as $key => $val) {
-                        switch ($key) {
-                            case 'linkWebsiteHosts':
-                                $c = \count($val);
-                                if ($c < 1) break;
+                    $q1Func($q1, $query);
+                    $q11Func($q11, $query);
 
-                                $q11Func($q11, $query);
-                                $q111Func($q111, $query);
-
-                                if ($c == 1) {
-                                    $query->andWhere('ce2lw.host = :linkWebsiteHost');
-                                    $query->setParameter('linkWebsiteHost', $val[0]);
-                                    break;
-                                }
-                                $query->andWhere('ce2lw.host IN (:linkWebsiteHosts)');
-                                $query->setParameter('linkWebsiteHosts', $val);
-                                break;
-                            case 'linkRelativeReferences':
-                                $c = \count($val);
-                                if ($c < 1) break;
-
-                                $q11Func($q11, $query);
-
-                                foreach ($val as $k => $v) {
-                                    switch ($v) {
-                                        case null:
-                                            $val[$k] = '';
-                                            break;
-                                        case '':
-                                            $val[$k] = null;
-                                            break;
-                                    }
-                                }
-
-                                if ($c == 1) {
-                                    $query->andWhere('ce2l.relativeReference = :linkRelativeReference');
-                                    $query->setParameter('linkRelativeReference', $val[0]);
-                                    break;
-                                }
-                                $query->andWhere('ce2l.relativeReference IN (:linkRelativeReferences)');
-                                $query->setParameter('linkRelativeReferences', $val);
-                                break;
-                            case 'linkHREFs':
-                                $c = \count($val);
-                                if ($c < 1) break;
-
-                                $q11Func($q11, $query);
-                                $q111Func($q111, $query);
-
-                                $qExOr = $query->expr()->orX();
-                                foreach ($val as $k => $v) {
-                                    $href = new Href($v);
-
-                                    $qExOr->add('ce2lw.host = :linkHREFA' . $k . ' AND ' . 'ce2l.relativeReference = :linkHREFB' . $k);
-                                    $query->setParameter('linkHREFA' . $k, $href->getHost());
-                                    $query->setParameter('linkHREFB' . $k, $href->getRelativeReference() ?? '');
-                                }
-                                $query->andWhere($qExOr);
-                                break;
-                        }
+                    if ($c == 1) {
+                        $query->andWhere('ce2l.relativeReference = :externalLinkRelativeReference');
+                        $query->setParameter('externalLinkRelativeReference', $val[0]);
+                        break;
                     }
+                    $query->andWhere('ce2l.relativeReference IN (:externalLinkRelativeReferences)');
+                    $query->setParameter('externalLinkRelativeReferences', $val);
+                    break;
+                case 'externalLinkHREFs':
+                    $c = \count($val);
+                    if ($c < 1) break;
+
+                    $q1Func($q1, $query);
+                    $q11Func($q11, $query);
+                    $q111Func($q111, $query);
+
+                    $qExOr = $query->expr()->orX();
+                    foreach ($val as $k => $v) {
+                        $href = new Href($v);
+
+                        $qExOr->add('ce2lw.host = :hostLinkHREFA' . $k . ' AND ' . 'ce2l.relativeReference = :hostLinkHREFB' . $k);
+                        $query->setParameter('hostLinkHREFA' . $k, $href->getHost());
+                        $query->setParameter('hostLinkHREFB' . $k, $href->getRelativeReference() ?? '');
+                    }
+                    $query->andWhere($qExOr);
                     break;
             }
         }

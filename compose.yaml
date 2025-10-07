@@ -1,6 +1,7 @@
 version: '3'
 
 services:
+
 ###> doctrine/doctrine-bundle ###
   database:
     image: mariadb:${MARIADB_VERSION:-10}
@@ -24,6 +25,7 @@ services:
 ###< doctrine/doctrine-bundle ###
 
 volumes:
+
 ###> doctrine/doctrine-bundle ###
   database_data:
 ###< doctrine/doctrine-bundle ###

@@ -47,10 +47,6 @@ class Category
     #[Serializer\Groups(['category'])]
     private ?string $name = null;
 
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name: 'link_id', onDelete: 'SET NULL')]
-    private ?Link $link = null;
-
     #[ORM\ManyToOne(targetEntity: self::class, inversedBy: 'children')]
     #[ORM\JoinColumn(name: 'parent_id', onDelete: 'CASCADE')]
     private ?self $parent = null;
@@ -153,38 +149,6 @@ class Category
     public function setName(string $name): static
     {
         $this->name = $name;
-
-        return $this;
-    }
-
-    public function getLink(): ?Link
-    {
-        return $this->link;
-    }
-
-    #[Serializer\Groups(['category'])]
-    public function getLinkWebsiteHost(): ?string
-    {
-        if ($this->link == null) {
-            return null;
-        }
-
-        return $this->link->getWebsiteHost();
-    }
-
-    #[Serializer\Groups(['category'])]
-    public function getLinkRelativeReference(): ?string
-    {
-        if ($this->link == null) {
-            return null;
-        }
-
-        return $this->link->getRelativeReference();
-    }
-
-    public function setLink(?Link $link): static
-    {
-        $this->link = $link;
 
         return $this;
     }

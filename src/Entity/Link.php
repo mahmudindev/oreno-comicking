@@ -35,9 +35,9 @@ class Link
     #[Assert\NotNull]
     private ?Website $website = null;
 
-    #[ORM\Column(length: 255, options: ['default' => '', 'collation' => 'utf8mb4_bin'])]
+    #[ORM\Column(length: 255, options: ['default' => '/', 'collation' => 'utf8mb4_bin'])]
     #[Assert\Length(min: 1, max: 255)]
-    #[Assert\Regex('/^\/|\?|#/')]
+    #[Assert\Regex('/^\//')]
     #[Serializer\Groups(['link'])]
     private ?string $relativeReference = null;
 
@@ -45,16 +45,12 @@ class Link
     public function onPrePersist(PrePersistEventArgs $args)
     {
         $this->setCreatedAt(new \DateTimeImmutable());
-
-        if ($this->relativeReference == null) $this->setRelativeReference('');
     }
 
     #[ORM\PreUpdate]
     public function onPreUpdate(PreUpdateEventArgs $args)
     {
         $this->setUpdatedAt(new \DateTimeImmutable());
-
-        if ($this->relativeReference == null) $this->setRelativeReference('');
     }
 
     public function getId(): ?int
@@ -120,10 +116,6 @@ class Link
 
     public function getRelativeReference(): ?string
     {
-        if ($this->relativeReference == '') {
-            return null;
-        }
-
         return $this->relativeReference;
     }
 

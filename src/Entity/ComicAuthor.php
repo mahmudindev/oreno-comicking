@@ -3,8 +3,6 @@
 namespace App\Entity;
 
 use App\Repository\ComicAuthorRepository;
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
@@ -14,7 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ComicAuthorRepository::class)]
 #[ORM\Table(name: 'comic_author')]
-#[ORM\UniqueConstraint(columns: ['comic_id', 'type_id', 'person_id'])]
+#[ORM\UniqueConstraint(columns: ['comic_id', 'position_id', 'person_id'])]
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Cache(usage: 'NONSTRICT_READ_WRITE')]
 class ComicAuthor
@@ -38,26 +36,14 @@ class ComicAuthor
     private ?Comic $comic = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name: 'type_id', nullable: false)]
+    #[ORM\JoinColumn(name: 'position_id', nullable: false)]
     #[Assert\NotNull]
-    private ?ComicAuthorKind $type = null;
+    private ?ComicAuthorPosition $position = null;
 
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(name: 'person_id', nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull]
     private ?Person $person = null;
-
-    /**
-     * @var Collection<int, ComicAuthorNote>
-     */
-    #[ORM\OneToMany(targetEntity: ComicAuthorNote::class, mappedBy: 'author', fetch: 'EXTRA_LAZY')]
-    #[ORM\Cache(usage: 'NONSTRICT_READ_WRITE')]
-    private Collection $notes;
-
-    public function __construct()
-    {
-        $this->notes = new ArrayCollection();
-    }
 
     #[ORM\PrePersist]
     public function onPrePersist(PrePersistEventArgs $args)
@@ -122,24 +108,24 @@ class ComicAuthor
         return $this;
     }
 
-    public function getType(): ?ComicAuthorKind
+    public function getPosition(): ?ComicAuthorPosition
     {
-        return $this->type;
+        return $this->position;
     }
 
     #[Serializer\Groups(['comic', 'comicAuthor'])]
-    public function getTypeCode(): ?string
+    public function getPositionCode(): ?string
     {
-        if ($this->type == null) {
+        if ($this->position == null) {
             return null;
         }
 
-        return $this->type->getCode();
+        return $this->position->getCode();
     }
 
-    public function setType(?ComicAuthorKind $type): static
+    public function setPosition(?ComicAuthorPosition $type): static
     {
-        $this->type = $type;
+        $this->position = $type;
 
         return $this;
     }
@@ -162,42 +148,6 @@ class ComicAuthor
     public function setPerson(?Person $person): static
     {
         $this->person = $person;
-
-        return $this;
-    }
-
-    /**
-     * @return Collection<int, ComicAuthorNote>
-     */
-    public function getNotes(): Collection
-    {
-        return $this->notes;
-    }
-
-    #[Serializer\Groups(['comic', 'comicAuthor'])]
-    public function getNoteCount(): ?int
-    {
-        return $this->notes->count();
-    }
-
-    public function addNote(ComicAuthorNote $note): static
-    {
-        if (!$this->notes->contains($note)) {
-            $this->notes->add($note);
-            $note->setAuthor($this);
-        }
-
-        return $this;
-    }
-
-    public function removeCover(ComicAuthorNote $note): static
-    {
-        if ($this->notes->removeElement($note)) {
-            // set the owning side to null (unless already changed)
-            if ($note->getAuthor() === $this) {
-                $note->setAuthor(null);
-            }
-        }
 
         return $this;
     }

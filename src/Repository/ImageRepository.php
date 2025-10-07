@@ -2,7 +2,7 @@
 
 namespace App\Repository;
 
-use App\Entity\Link;
+use App\Entity\Image;
 use App\Model\OrderByDto;
 use App\Util\Href;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -10,13 +10,13 @@ use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Link>
+ * @extends ServiceEntityRepository<Image>
  */
-class LinkRepository extends ServiceEntityRepository
+class ImageRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Link::class);
+        parent::__construct($registry, Image::class);
     }
 
     public function findByCustom(
@@ -25,38 +25,50 @@ class LinkRepository extends ServiceEntityRepository
         ?int $limit = null,
         ?int $offset = null
     ): array {
-        $query = $this->createQueryBuilder('l')
-            ->leftJoin('l.website', 'lw')->addSelect('lw');
+        $query = $this->createQueryBuilder('i')
+            ->leftJoin('i.link', 'il')->addSelect('il')
+            ->leftJoin('il.website', 'ilw')->addSelect('ilw');
 
         foreach ($criteria as $key => $val) {
             $val = \array_unique($val);
 
             switch ($key) {
-                case 'websiteHosts':
+                case 'linkWebsiteHosts':
                     $c = \count($val);
                     if ($c < 1) break;
 
                     if ($c == 1) {
-                        $query->andWhere('lw.host = :websiteHost');
-                        $query->setParameter('websiteHost', $val[0]);
+                        $query->andWhere('ilw.host = :linkWebsiteHost');
+                        $query->setParameter('linkWebsiteHost', $val[0]);
                         break;
                     }
-                    $query->andWhere('lw.host IN (:websiteHosts)');
-                    $query->setParameter('websiteHosts', $val);
+                    $query->andWhere('ilw.host IN (:linkWebsiteHosts)');
+                    $query->setParameter('linkWebsiteHosts', $val);
                     break;
-                case 'relativeReferences':
+                case 'linkRelativeReferences':
                     $c = \count($val);
                     if ($c < 1) break;
 
+                    foreach ($val as $k => $v) {
+                        switch ($v) {
+                            case null:
+                                $val[$k] = '';
+                                break;
+                            case '':
+                                $val[$k] = null;
+                                break;
+                        }
+                    }
+
                     if ($c == 1) {
-                        $query->andWhere('l.relativeReference = :relativeReference');
-                        $query->setParameter('relativeReference', $val[0]);
+                        $query->andWhere('il.relativeReference = :linkRelativeReference');
+                        $query->setParameter('linkRelativeReference', $val[0]);
                         break;
                     }
-                    $query->andWhere('l.relativeReference IN (:relativeReferences)');
-                    $query->setParameter('relativeReferences', $val);
+                    $query->andWhere('il.relativeReference IN (:linkRelativeReferences)');
+                    $query->setParameter('linkRelativeReferences', $val);
                     break;
-                case 'hrefs':
+                case 'linkHREFs':
                     $c = \count($val);
                     if ($c < 1) break;
 
@@ -64,9 +76,9 @@ class LinkRepository extends ServiceEntityRepository
                     foreach ($val as $k => $v) {
                         $href = new Href($v);
 
-                        $qExOr->add('lw.host = :hrefA' . $k . ' AND ' . 'l.relativeReference = :hrefB' . $k);
-                        $query->setParameter('hrefA' . $k, $href->getHost());
-                        $query->setParameter('hrefB' . $k, $href->getRelativeReference() ?? '');
+                        $qExOr->add('ilw.host = :linkHREFA' . $k . ' AND ' . 'il.relativeReference = :linkHREFB' . $k);
+                        $query->setParameter('linkHREFA' . $k, $href->getHost());
+                        $query->setParameter('linkHREFB' . $k, $href->getRelativeReference() ?? '');
                     }
                     $query->andWhere($qExOr);
                     break;
@@ -77,16 +89,19 @@ class LinkRepository extends ServiceEntityRepository
             foreach ($orderBy as $key => $val) {
                 if (!($val instanceof OrderByDto)) continue;
 
-                if ($key > 4) break;
+                if ($key > 5) break;
 
                 switch ($val->name) {
-                    case 'websiteHost':
-                        $val->name = 'lw.host';
+                    case 'linkWebsiteHost':
+                        $val->name = 'ilw.host';
+                        break;
+                    case 'linkRelativeReference':
+                        $val->name = 'il.relativeReference';
                         break;
                     case 'createdAt':
                     case 'updatedAt':
-                    case 'relativeReference':
-                        $val->name = 'l.' . $val->name;
+                    case 'ulid':
+                        $val->name = 'i.' . $val->name;
                         break;
                     default:
                         continue 2;
@@ -131,8 +146,7 @@ class LinkRepository extends ServiceEntityRepository
                 $query->addOrderBy($val->name, $val->order);
             }
         } else {
-            $query->orderBy('lw.host');
-            $query->orderBy('l.relativeReference');
+            $query->orderBy('i.ulid');
         }
 
         $query->setMaxResults($limit);
@@ -143,13 +157,19 @@ class LinkRepository extends ServiceEntityRepository
 
     public function countCustom(array $criteria = []): int
     {
-        $query = $this->createQueryBuilder('l')
-            ->select('count(l.id)');
+        $query = $this->createQueryBuilder('i')
+            ->select('count(i.id)');
 
         $q01 = false;
         $q01Func = function (bool &$c, QueryBuilder &$q): void {
             if ($c) return;
-            $q->leftJoin('l.website', 'lw');
+            $q->leftJoin('i.link', 'il');
+            $c = true;
+        };
+        $q02 = false;
+        $q02Func = function (bool &$c, QueryBuilder &$q): void {
+            if ($c) return;
+            $q->leftJoin('il.website', 'ilw');
             $c = true;
         };
 
@@ -157,45 +177,60 @@ class LinkRepository extends ServiceEntityRepository
             $val = \array_unique($val);
 
             switch ($key) {
-                case 'websiteHosts':
+                case 'linkWebsiteHosts':
+                    $c = \count($val);
+                    if ($c < 1) break;
+
+                    $q01Func($q01, $query);
+                    $q02Func($q02, $query);
+
+                    if ($c == 1) {
+                        $query->andWhere('ilw.host = :linkWebsiteHost');
+                        $query->setParameter('linkWebsiteHost', $val[0]);
+                        break;
+                    }
+                    $query->andWhere('ilw.host IN (:linkWebsiteHosts)');
+                    $query->setParameter('linkWebsiteHosts', $val);
+                    break;
+                case 'linkRelativeReferences':
                     $c = \count($val);
                     if ($c < 1) break;
 
                     $q01Func($q01, $query);
 
-                    if ($c == 1) {
-                        $query->andWhere('lw.host = :websiteHost');
-                        $query->setParameter('websiteHost', $val[0]);
-                        break;
+                    foreach ($val as $k => $v) {
+                        switch ($v) {
+                            case null:
+                                $val[$k] = '';
+                                break;
+                            case '':
+                                $val[$k] = null;
+                                break;
+                        }
                     }
-                    $query->andWhere('lw.host IN (:websiteHosts)');
-                    $query->setParameter('websiteHosts', $val);
-                    break;
-                case 'relativeReferences':
-                    $c = \count($val);
-                    if ($c < 1) break;
 
                     if ($c == 1) {
-                        $query->andWhere('l.relativeReference = :relativeReference');
-                        $query->setParameter('relativeReference', $val[0]);
+                        $query->andWhere('il.relativeReference = :linkRelativeReference');
+                        $query->setParameter('linkRelativeReference', $val[0]);
                         break;
                     }
-                    $query->andWhere('l.relativeReference IN (:relativeReferences)');
-                    $query->setParameter('relativeReferences', $val);
+                    $query->andWhere('il.relativeReference IN (:linkRelativeReferences)');
+                    $query->setParameter('linkRelativeReferences', $val);
                     break;
-                case 'hrefs':
+                case 'linkHREFs':
                     $c = \count($val);
                     if ($c < 1) break;
 
                     $q01Func($q01, $query);
+                    $q02Func($q02, $query);
 
                     $qExOr = $query->expr()->orX();
                     foreach ($val as $k => $v) {
                         $href = new Href($v);
 
-                        $qExOr->add('lw.host = :hrefA' . $k . ' AND ' . 'l.relativeReference = :hrefB' . $k);
-                        $query->setParameter('hrefA' . $k, $href->getHost());
-                        $query->setParameter('hrefB' . $k, $href->getRelativeReference() ?? '');
+                        $qExOr->add('ilw.host = :linkHREFA' . $k . ' AND ' . 'il.relativeReference = :linkHREFB' . $k);
+                        $query->setParameter('linkHREFA' . $k, $href->getHost());
+                        $query->setParameter('linkHREFB' . $k, $href->getRelativeReference() ?? '');
                     }
                     $query->andWhere($qExOr);
                     break;

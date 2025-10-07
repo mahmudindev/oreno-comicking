@@ -7,8 +7,7 @@ use App\Model\OrderByDto;
 use App\Repository\ComicRepository;
 use App\Repository\ComicVolumeCoverRepository;
 use App\Repository\ComicVolumeRepository;
-use App\Repository\LinkRepository;
-use App\Repository\WebsiteRepository;
+use App\Repository\ImageRepository;
 use App\Util\UrlQuery;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -35,8 +34,7 @@ class RestComicVolumeCoverController extends AbstractController
         private readonly ComicRepository $comicRepository,
         private readonly ComicVolumeRepository $comicVolumeRepository,
         private readonly ComicVolumeCoverRepository $comicVolumeCoverRepository,
-        private readonly LinkRepository $linkRepository,
-        private readonly WebsiteRepository $websiteRepository
+        private readonly ImageRepository $imageRepository
     ) {}
 
     #[Routing\Route('', name: 'list', methods: [Request::METHOD_GET])]
@@ -46,7 +44,7 @@ class RestComicVolumeCoverController extends AbstractController
         string $volumeNumber,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1])] int $page = 1,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1, 'max_range' => 30])] int $limit = 10,
-        #[HttpKernel\MapQueryParameter] string $order = null
+        #[HttpKernel\MapQueryParameter] string | null $order = null
     ): Response {
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
 
@@ -99,17 +97,13 @@ class RestComicVolumeCoverController extends AbstractController
         switch ($request->headers->get('Content-Type')) {
             case 'application/json':
                 $content = \json_decode($request->getContent(), true);
-                if (isset($content['linkWebsiteHost'])) {
-                    $r1 = $this->linkRepository->findOneBy([
-                        'website' => $this->websiteRepository->findOneBy([
-                            'host' => $content['linkWebsiteHost']
-                        ]),
-                        'relativeReference' => $content['linkRelativeReference'] ?? ''
+                if (isset($content['imageULID'])) {
+                    $r1 = $this->imageRepository->findOneBy([
+                        'ulid' => $content['imageULID']
                     ]);
-                    if (!$r1) throw new BadRequestException('Link does not exists.');
-                    $result->setLink($r1);
+                    if (!$r1) throw new BadRequestException('Image does not exists.');
+                    $result->setImage($r1);
                 }
-                if (isset($content['hint'])) $result->setHint($content['hint']);
                 break;
             default:
                 throw new UnsupportedMediaTypeHttpException();
@@ -124,25 +118,25 @@ class RestComicVolumeCoverController extends AbstractController
         $headers['Location'] = $this->generateUrl('rest_comic_volume_cover_get', [
             'comicCode' => $result->getVolumeComicCode(),
             'volumeNumber' => $result->getVolumeNumber(),
-            'ulid' => $result->getUlid()
+            'imageULID' => $result->getImageULID()
         ]);
 
         return $this->json($result, Response::HTTP_CREATED, $headers, ['groups' => ['comic']]);
     }
 
-    #[Routing\Route('/{ulid}', name: 'get', methods: [Request::METHOD_GET])]
+    #[Routing\Route('/{imageULID}', name: 'get', methods: [Request::METHOD_GET])]
     public function get(
         Request $request,
         string $comicCode,
         string $volumeNumber,
-        Ulid $ulid
+        Ulid $imageULID
     ): Response {
         $result = $this->comicVolumeCoverRepository->findOneBy([
             'volume' => $this->comicVolumeRepository->findOneBy([
                 'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
                 'number' => $volumeNumber
             ]),
-            'ulid' => $ulid
+            'image' => $this->imageRepository->findOneBy(['ulid' => $imageULID])
         ]);
         if (!$result) throw new NotFoundHttpException('Comic Volume Cover not found.');
 
@@ -156,35 +150,31 @@ class RestComicVolumeCoverController extends AbstractController
         return $response;
     }
 
-    #[Routing\Route('/{ulid}', name: 'patch', methods: [Request::METHOD_PATCH])]
+    #[Routing\Route('/{imageULID}', name: 'patch', methods: [Request::METHOD_PATCH])]
     public function patch(
         Request $request,
         string $comicCode,
         string $volumeNumber,
-        Ulid $ulid
+        Ulid $imageULID
     ): Response {
         $result = $this->comicVolumeCoverRepository->findOneBy([
             'volume' => $this->comicVolumeRepository->findOneBy([
                 'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
                 'number' => $volumeNumber
             ]),
-            'ulid' => $ulid
+            'image' => $this->imageRepository->findOneBy(['ulid' => $imageULID])
         ]);
         if (!$result) throw new NotFoundHttpException('Comic Volume Cover not found.');
         switch ($request->headers->get('Content-Type')) {
             case 'application/json':
                 $content = \json_decode($request->getContent(), true);
                 if (isset($content['linkWebsiteHost'])) {
-                    $r1 = $this->linkRepository->findOneBy([
-                        'website' => $this->websiteRepository->findOneBy([
-                            'host' => $content['linkWebsiteHost']
-                        ]),
-                        'relativeReference' => $content['linkRelativeReference'] ?? ''
+                    $r1 = $this->imageRepository->findOneBy([
+                        'ulid' => $content['imageULID']
                     ]);
-                    if (!$r1) throw new BadRequestException('Link does not exists.');
-                    $result->setLink($r1);
+                    if (!$r1) throw new BadRequestException('Image does not exists.');
+                    $result->setImage($r1);
                 }
-                if (isset($content['hint'])) $result->setHint($content['hint']);
                 break;
             default:
                 throw new UnsupportedMediaTypeHttpException();
@@ -197,24 +187,24 @@ class RestComicVolumeCoverController extends AbstractController
         $headers['Location'] = $this->generateUrl('rest_comic_volume_cover_get', [
             'comicCode' => $result->getVolumeComicCode(),
             'volumeNumber' => $result->getVolumeNumber(),
-            'ulid' => $result->getUlid()
+            'imageULID' => $result->getImageULID()
         ]);
 
         return $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['comic']]);
     }
 
-    #[Routing\Route('/{code}', name: 'delete', methods: [Request::METHOD_DELETE])]
+    #[Routing\Route('/{imageULID}', name: 'delete', methods: [Request::METHOD_DELETE])]
     public function delete(
         string $comicCode,
         string $volumeNumber,
-        Ulid $ulid
+        Ulid $imageULID
     ): Response {
         $result = $this->comicVolumeCoverRepository->findOneBy([
             'volume' => $this->comicVolumeRepository->findOneBy([
                 'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
                 'number' => $volumeNumber
             ]),
-            'ulid' => $ulid
+            'image' => $this->imageRepository->findOneBy(['ulid' => $imageULID])
         ]);
         if (!$result) throw new NotFoundHttpException('Comic Cover not found.');
         $this->entityManager->remove($result);

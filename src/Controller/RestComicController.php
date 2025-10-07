@@ -35,19 +35,14 @@ class RestComicController extends AbstractController
         Request $request,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1])] int $page = 1,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1, 'max_range' => 15])] int $limit = 10,
-        #[HttpKernel\MapQueryParameter] string $order = null
+        #[HttpKernel\MapQueryParameter] string | null $order = null
     ): Response {
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
 
         $criteria = [];
-        $criteria['externals'] = \array_map(function (string $val) {
-            $queries = new UrlQuery($val);
-            $externals = [];
-            $externals['linkWebsiteHosts'] = $queries->all('linkWebsiteHost', 'linkWebsiteHosts');
-            $externals['linkRelativeReferences'] = $queries->all('linkRelativeReference', 'linkRelativeReferences');
-            $externals['linkHREFs'] = $queries->all('linkHREF', 'linkHREFs');
-            return $externals;
-        }, $queries->all('external', 'externals'));
+        $criteria['externalLinkWebsiteHosts'] = $queries->all('externalLinkWebsiteHost', 'externalLinkWebsiteHosts');
+        $criteria['externalLinkRelativeReferences'] = $queries->all('externalLinkRelativeReference', 'externalLinkRelativeReferences');
+        $criteria['externalLinkHREFs'] = $queries->all('externalLinkHREF', 'externalLinkHREFs');
         $orderBy = \array_map([OrderByDto::class, 'parse'], $queries->all('orderBy', 'orderBys'));
         if ($order != null) {
             \array_unshift($orderBy, new OrderByDto('code', $order));

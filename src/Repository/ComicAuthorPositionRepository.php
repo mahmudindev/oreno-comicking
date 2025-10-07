@@ -2,19 +2,19 @@
 
 namespace App\Repository;
 
-use App\Entity\ComicAuthorKind;
+use App\Entity\ComicAuthorPosition;
 use App\Model\OrderByDto;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<ComicAuthorKind>
+ * @extends ServiceEntityRepository<ComicAuthorPosition>
  */
-class ComicAuthorKindRepository extends ServiceEntityRepository
+class ComicAuthorPositionRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, ComicAuthorKind::class);
+        parent::__construct($registry, ComicAuthorPosition::class);
     }
 
     public function findByCustom(

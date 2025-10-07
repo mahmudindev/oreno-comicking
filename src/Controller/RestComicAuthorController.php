@@ -4,7 +4,7 @@ namespace App\Controller;
 
 use App\Entity\ComicAuthor;
 use App\Model\OrderByDto;
-use App\Repository\ComicAuthorKindRepository;
+use App\Repository\ComicAuthorPositionRepository;
 use App\Repository\ComicAuthorRepository;
 use App\Repository\ComicRepository;
 use App\Repository\PersonRepository;
@@ -32,7 +32,7 @@ class RestComicAuthorController extends AbstractController
         private readonly EntityManagerInterface $entityManager,
         private readonly ComicRepository $comicRepository,
         private readonly ComicAuthorRepository $comicAuthorRepository,
-        private readonly ComicAuthorKindRepository $comicAuthorKindRepository,
+        private readonly ComicAuthorPositionRepository $comicAuthorPositionRepository,
         private readonly PersonRepository $personRepository
     ) {}
 
@@ -42,17 +42,17 @@ class RestComicAuthorController extends AbstractController
         string $comicCode,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1])] int $page = 1,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1, 'max_range' => 30])] int $limit = 10,
-        #[HttpKernel\MapQueryParameter] string $order = null
+        #[HttpKernel\MapQueryParameter] string | null $order = null
     ): Response {
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
 
         $criteria = [];
         $criteria['comicCodes'] = [$comicCode];
-        $criteria['typeCodes'] = $queries->all('typeCode', 'typeCodes');
+        $criteria['positionCodes'] = $queries->all('positionCode', 'positionCodes');
         $orderBy = \array_map([OrderByDto::class, 'parse'], $queries->all('orderBy', 'orderBys'));
         if ($order != null) {
+            \array_unshift($orderBy, new OrderByDto('positionCode', $order));
             \array_unshift($orderBy, new OrderByDto('personCode', $order));
-            \array_unshift($orderBy, new OrderByDto('typeCode', $order));
         }
         $offset = $limit * ($page - 1);
 
@@ -89,10 +89,10 @@ class RestComicAuthorController extends AbstractController
         switch ($request->headers->get('Content-Type')) {
             case 'application/json':
                 $content = \json_decode($request->getContent(), true);
-                if (isset($content['typeCode'])) {
-                    $r1 = $this->comicAuthorKindRepository->findOneBy(['code' => $content['typeCode']]);
-                    if (!$r1) throw new BadRequestException('Comic Author Type does not exists.');
-                    $result->setType($r1);
+                if (isset($content['positionCode'])) {
+                    $r1 = $this->comicAuthorPositionRepository->findOneBy(['code' => $content['positionCode']]);
+                    if (!$r1) throw new BadRequestException('Comic Author Position does not exists.');
+                    $result->setPosition($r1);
                 }
                 if (isset($content['personCode'])) {
                     $r2 = $this->personRepository->findOneBy(['code' => $content['personCode']]);
@@ -112,23 +112,23 @@ class RestComicAuthorController extends AbstractController
         $headers = [];
         $headers['Location'] = $this->generateUrl('rest_comic_author_get', [
             'comicCode' => $result->getComicCode(),
-            'typeCode' => $result->getTypeCode(),
+            'positionCode' => $result->getPositionCode(),
             'personCode' => $result->getPersonCode()
         ]);
 
         return $this->json($result, Response::HTTP_CREATED, $headers, ['groups' => ['comic']]);
     }
 
-    #[Routing\Route('/{typeCode}:{personCode}', name: 'get', methods: [Request::METHOD_GET])]
+    #[Routing\Route('/{positionCode}:{personCode}', name: 'get', methods: [Request::METHOD_GET])]
     public function get(
         Request $request,
         string $comicCode,
-        string $typeCode,
+        string $positionCode,
         string $personCode
     ): Response {
         $result = $this->comicAuthorRepository->findOneBy([
             'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
-            'type' => $this->comicAuthorKindRepository->findOneBy(['code' => $typeCode]),
+            'position' => $this->comicAuthorPositionRepository->findOneBy(['code' => $positionCode]),
             'person' => $this->personRepository->findOneBy(['code' => $personCode])
         ]);
         if (!$result) throw new NotFoundHttpException('Comic Author not found.');
@@ -143,26 +143,26 @@ class RestComicAuthorController extends AbstractController
         return $response;
     }
 
-    #[Routing\Route('/{typeCode}:{personCode}', name: 'patch', methods: [Request::METHOD_PATCH])]
+    #[Routing\Route('/{positionCode}:{personCode}', name: 'patch', methods: [Request::METHOD_PATCH])]
     public function patch(
         Request $request,
         string $comicCode,
-        string $typeCode,
+        string $positionCode,
         string $personCode
     ): Response {
         $result = $this->comicAuthorRepository->findOneBy([
             'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
-            'type' => $this->comicAuthorKindRepository->findOneBy(['code' => $typeCode]),
+            'position' => $this->comicAuthorPositionRepository->findOneBy(['code' => $positionCode]),
             'person' => $this->personRepository->findOneBy(['code' => $personCode])
         ]);
         if (!$result) throw new NotFoundHttpException('Comic Author not found.');
         switch ($request->headers->get('Content-Type')) {
             case 'application/json':
                 $content = \json_decode($request->getContent(), true);
-                if (isset($content['typeCode'])) {
-                    $r1 = $this->comicAuthorKindRepository->findOneBy(['code' => $content['typeCode']]);
-                    if (!$r1) throw new BadRequestException('Comic Author Type does not exists.');
-                    $result->setType($r1);
+                if (isset($content['positionCode'])) {
+                    $r1 = $this->comicAuthorPositionRepository->findOneBy(['code' => $content['positionCode']]);
+                    if (!$r1) throw new BadRequestException('Comic Author Position does not exists.');
+                    $result->setPosition($r1);
                 }
                 if (isset($content['personCode'])) {
                     $r2 = $this->personRepository->findOneBy(['code' => $content['personCode']]);
@@ -180,22 +180,22 @@ class RestComicAuthorController extends AbstractController
         $headers = [];
         $headers['Location'] = $this->generateUrl('rest_comic_author_get', [
             'comicCode' => $result->getComicCode(),
-            'typeCode' => $result->getTypeCode(),
+            'positionCode' => $result->getPositionCode(),
             'personCode' => $result->getPersonCode()
         ]);
 
         return $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['comic']]);
     }
 
-    #[Routing\Route('/{typeCode}:{personCode}', name: 'delete', methods: [Request::METHOD_DELETE])]
+    #[Routing\Route('/{positionCode}:{personCode}', name: 'delete', methods: [Request::METHOD_DELETE])]
     public function delete(
         string $comicCode,
-        string $typeCode,
+        string $positionCode,
         string $personCode
     ): Response {
         $result = $this->comicAuthorRepository->findOneBy([
             'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
-            'type' => $this->comicAuthorKindRepository->findOneBy(['code' => $typeCode]),
+            'position' => $this->comicAuthorPositionRepository->findOneBy(['code' => $positionCode]),
             'person' => $this->personRepository->findOneBy(['code' => $personCode])
         ]);
         if (!$result) throw new NotFoundHttpException('Comic Author not found.');

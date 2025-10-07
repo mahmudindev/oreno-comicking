@@ -2,7 +2,7 @@
 
 namespace App\Entity;
 
-use App\Repository\ComicAuthorKindRepository;
+use App\Repository\ComicAuthorPositionRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
@@ -10,11 +10,11 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation as Serializer;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: ComicAuthorKindRepository::class)]
-#[ORM\Table(name: 'comic_author_type')]
+#[ORM\Entity(repositoryClass: ComicAuthorPositionRepository::class)]
+#[ORM\Table(name: 'comic_author_position')]
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Cache(usage: 'NONSTRICT_READ_WRITE')]
-class ComicAuthorKind
+class ComicAuthorPosition
 {
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
@@ -22,21 +22,21 @@ class ComicAuthorKind
     private ?int $id = null;
 
     #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
-    #[Serializer\Groups(['comicAuthorType'])]
+    #[Serializer\Groups(['comicAuthorPosition'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
-    #[Serializer\Groups(['comicAuthorType'])]
+    #[Serializer\Groups(['comicAuthorPosition'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(length: 32, unique: true)]
     #[Assert\NotBlank, Assert\Length(min: 1, max: 32)]
-    #[Serializer\Groups(['comicAuthorType'])]
+    #[Serializer\Groups(['comicAuthorPosition'])]
     private ?string $code = null;
 
     #[ORM\Column(length: 32)]
     #[Assert\NotBlank, Assert\Length(min: 1, max: 32)]
-    #[Serializer\Groups(['comicAuthorType'])]
+    #[Serializer\Groups(['comicAuthorPosition'])]
     private ?string $name = null;
 
     #[ORM\PrePersist]

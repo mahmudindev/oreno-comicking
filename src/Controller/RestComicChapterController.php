@@ -45,7 +45,7 @@ class RestComicChapterController extends AbstractController
         string $comicCode,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1])] int $page = 1,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1, 'max_range' => 30])] int $limit = 10,
-        #[HttpKernel\MapQueryParameter] string $order = null
+        #[HttpKernel\MapQueryParameter] string | null $order = null
     ): Response {
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
 
@@ -99,20 +99,10 @@ class RestComicChapterController extends AbstractController
                     if (!$r1) throw new BadRequestException('Released At could not be parsed.');
                     $result->setReleasedAt($r1);
                 }
-                if (isset($content['thumbnailLinkWebsiteHost'])) {
-                    $r2 = $this->linkRepository->findOneBy([
-                        'website' => $this->websiteRepository->findOneBy([
-                            'host' => $content['thumbnailLinkWebsiteHost']
-                        ]),
-                        'relativeReference' => $content['thumbnailLinkRelativeReference'] ?? ''
-                    ]);
-                    if (!$r2) throw new BadRequestException('Thumbnail (Link) does not exists.');
-                    $result->setThumbnailLink($r2);
-                }
                 if (isset($content['volumeNumber'])) {
-                    $r3 = $this->comicVolumeRepository->findOneBy(['number' => $content['volumeNumber']]);
-                    if (!$r3) throw new BadRequestException('Comic Volume does not exists.');
-                    $result->setVolume($r3);
+                    $r2 = $this->comicVolumeRepository->findOneBy(['number' => $content['volumeNumber']]);
+                    if (!$r2) throw new BadRequestException('Comic Volume does not exists.');
+                    $result->setVolume($r2);
                 }
                 break;
             default:
@@ -189,27 +179,13 @@ class RestComicChapterController extends AbstractController
                         $result->setReleasedAt($r1);
                     }
                 }
-                if (isset($content['thumbnailLinkWebsiteHost'])) {
-                    if ($content['thumbnailLinkWebsiteHost'] == null) {
-                        $result->setThumbnail(null);
-                    } else {
-                        $r2 = $this->linkRepository->findOneBy([
-                            'website' => $this->websiteRepository->findOneBy([
-                                'host' => $content['thumbnailLinkWebsiteHost']
-                            ]),
-                            'relativeReference' => $content['thumbnailLinkRelativeReference'] ?? ''
-                        ]);
-                        if (!$r2) throw new BadRequestException('Thumbnail (Link) does not exists.');
-                        $result->setThumbnailLink($r2);
-                    }
-                }
                 if (isset($content['volumeNumber'])) {
                     if ($content['volumeNumber'] == null) {
                         $result->setVolume(null);
                     } else {
-                        $r3 = $this->comicVolumeRepository->findOneBy(['number' => $content['volumeNumber']]);
-                        if (!$r3) throw new BadRequestException('Comic Volume does not exists.');
-                        $result->setVolume($r3);
+                        $r2 = $this->comicVolumeRepository->findOneBy(['number' => $content['volumeNumber']]);
+                        if (!$r2) throw new BadRequestException('Comic Volume does not exists.');
+                        $result->setVolume($r2);
                     }
                 }
                 break;

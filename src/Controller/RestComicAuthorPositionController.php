@@ -2,9 +2,9 @@
 
 namespace App\Controller;
 
-use App\Entity\ComicAuthorKind;
+use App\Entity\ComicAuthorPosition;
 use App\Model\OrderByDto;
-use App\Repository\ComicAuthorKindRepository;
+use App\Repository\ComicAuthorPositionRepository;
 use App\Util\UrlQuery;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,15 +18,15 @@ use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[Routing\Route(
-    path: '/api/rest/comic-author-types',
-    name: 'rest_comicauthortype_'
+    path: '/api/rest/comic-author-positions',
+    name: 'rest_comicauthorposition_'
 )]
-class RestComicAuthorKindController extends AbstractController
+class RestComicAuthorPositionController extends AbstractController
 {
     public function __construct(
         private readonly ValidatorInterface $validator,
         private readonly EntityManagerInterface $entityManager,
-        private readonly ComicAuthorKindRepository $comicAuthorKindRepository
+        private readonly ComicAuthorPositionRepository $comicAuthorPositionRepository
     ) {}
 
     #[Routing\Route('', name: 'list', methods: [Request::METHOD_GET])]
@@ -34,7 +34,7 @@ class RestComicAuthorKindController extends AbstractController
         Request $request,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1])] int $page = 1,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1, 'max_range' => 30])] int $limit = 10,
-        #[HttpKernel\MapQueryParameter] string $order = null
+        #[HttpKernel\MapQueryParameter] string | null $order = null
     ): Response {
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
 
@@ -45,13 +45,13 @@ class RestComicAuthorKindController extends AbstractController
         }
         $offset = $limit * ($page - 1);
 
-        $result = $this->comicAuthorKindRepository->findByCustom($criteria, $orderBy, $limit, $offset);
+        $result = $this->comicAuthorPositionRepository->findByCustom($criteria, $orderBy, $limit, $offset);
 
         $headers = [];
-        $headers['X-Total-Count'] = $this->comicAuthorKindRepository->countCustom($criteria);
+        $headers['X-Total-Count'] = $this->comicAuthorPositionRepository->countCustom($criteria);
         $headers['X-Pagination-Limit'] = $limit;
 
-        $response = $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['comicAuthorType']]);
+        $response = $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['comicAuthorPosition']]);
 
         $response->setEtag(\crc32($response->getContent()));
         foreach ($result as $v) {
@@ -71,7 +71,7 @@ class RestComicAuthorKindController extends AbstractController
     public function post(
         Request $request
     ): Response {
-        $result = new ComicAuthorKind();
+        $result = new ComicAuthorPosition();
         switch ($request->headers->get('Content-Type')) {
             case 'application/json':
                 $content = \json_decode($request->getContent(), true);
@@ -87,9 +87,9 @@ class RestComicAuthorKindController extends AbstractController
         $this->entityManager->flush();
 
         $headers = [];
-        $headers['Location'] = $this->generateUrl('rest_comicauthortype_get', ['code' => $result->getCode()]);
+        $headers['Location'] = $this->generateUrl('rest_comicauthorposition_get', ['code' => $result->getCode()]);
 
-        return $this->json($result, Response::HTTP_CREATED, $headers, ['groups' => ['comicAuthorType']]);
+        return $this->json($result, Response::HTTP_CREATED, $headers, ['groups' => ['comicAuthorPosition']]);
     }
 
     #[Routing\Route('/{code}', name: 'get', methods: [Request::METHOD_GET])]
@@ -97,10 +97,10 @@ class RestComicAuthorKindController extends AbstractController
         Request $request,
         string $code
     ): Response {
-        $result = $this->comicAuthorKindRepository->findOneBy(['code' => $code]);
-        if (!$result) throw new NotFoundHttpException('Comic Author Type not found.');
+        $result = $this->comicAuthorPositionRepository->findOneBy(['code' => $code]);
+        if (!$result) throw new NotFoundHttpException('Comic Author Position not found.');
 
-        $response = $this->json($result, Response::HTTP_OK, [], ['groups' => ['comicAuthorType']]);
+        $response = $this->json($result, Response::HTTP_OK, [], ['groups' => ['comicAuthorPosition']]);
 
         $response->setEtag(\crc32($response->getContent()));
         $response->setLastModified($result->getUpdatedAt() ?? $result->getCreatedAt());
@@ -115,8 +115,8 @@ class RestComicAuthorKindController extends AbstractController
         Request $request,
         string $code
     ): Response {
-        $result = $this->comicAuthorKindRepository->findOneBy(['code' => $code]);
-        if (!$result) throw new NotFoundHttpException('Comic Author Type not found.');
+        $result = $this->comicAuthorPositionRepository->findOneBy(['code' => $code]);
+        if (!$result) throw new NotFoundHttpException('Comic Author Position not found.');
         switch ($request->headers->get('Content-Type')) {
             case 'application/json':
                 $content = \json_decode($request->getContent(), true);
@@ -131,17 +131,17 @@ class RestComicAuthorKindController extends AbstractController
         $this->entityManager->flush();
 
         $headers = [];
-        $headers['Location'] = $this->generateUrl('rest_comicauthortype_get', ['code' => $result->getCode()]);
+        $headers['Location'] = $this->generateUrl('rest_comicauthorposition_get', ['code' => $result->getCode()]);
 
-        return $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['comicAuthorType']]);
+        return $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['comicAuthorPosition']]);
     }
 
     #[Routing\Route('/{code}', name: 'delete', methods: [Request::METHOD_DELETE])]
     public function delete(
         string $code
     ): Response {
-        $result = $this->comicAuthorKindRepository->findOneBy(['code' => $code]);
-        if (!$result) throw new NotFoundHttpException('Comic Author Type not found.');
+        $result = $this->comicAuthorPositionRepository->findOneBy(['code' => $code]);
+        if (!$result) throw new NotFoundHttpException('Comic Author Position not found.');
         $this->entityManager->remove($result);
         $this->entityManager->flush();
 

@@ -26,9 +26,7 @@ class CategoryRepository extends ServiceEntityRepository
     ): array {
         $query = $this->createQueryBuilder('c')
             ->leftJoin('c.type', 'ct')->addSelect('ct')
-            ->leftJoin('c.parent', 'cp')->addSelect('cp')
-            ->leftJoin('c.link', 'cl')->addSelect('cl')
-            ->leftJoin('cl.website', 'clw')->addSelect('clw');
+            ->leftJoin('c.parent', 'cp')->addSelect('cp');
 
         foreach ($criteria as $key => $val) {
             $val = \array_unique($val);
@@ -65,7 +63,7 @@ class CategoryRepository extends ServiceEntityRepository
             foreach ($orderBy as $key => $val) {
                 if (!($val instanceof OrderByDto)) continue;
 
-                if ($key > 8) break;
+                if ($key > 6) break;
 
                 switch ($val->name) {
                     case 'typeCode':
@@ -73,12 +71,6 @@ class CategoryRepository extends ServiceEntityRepository
                         break;
                     case 'parentCode':
                         $val->name = 'cp.code';
-                        break;
-                    case 'linkWebsiteHost':
-                        $val->name = 'clw.host';
-                        break;
-                    case 'linkRelativeReference':
-                        $val->name = 'cl.relativeReference';
                         break;
                     case 'createdAt':
                     case 'updatedAt':

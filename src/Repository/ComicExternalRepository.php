@@ -62,17 +62,6 @@ class ComicExternalRepository extends ServiceEntityRepository
                     $c = \count($val);
                     if ($c < 1) break;
 
-                    foreach ($val as $k => $v) {
-                        switch ($v) {
-                            case null:
-                                $val[$k] = '';
-                                break;
-                            case '':
-                                $val[$k] = null;
-                                break;
-                        }
-                    }
-
                     if ($c == 1) {
                         $query->andWhere('cl.relativeReference = :linkRelativeReference');
                         $query->setParameter('linkRelativeReference', $val[0]);
@@ -102,7 +91,7 @@ class ComicExternalRepository extends ServiceEntityRepository
             foreach ($orderBy as $key => $val) {
                 if (!($val instanceof OrderByDto)) continue;
 
-                if ($key > 9) break;
+                if ($key > 8) break;
 
                 switch ($val->name) {
                     case 'comicCode':
@@ -119,7 +108,6 @@ class ComicExternalRepository extends ServiceEntityRepository
                         break;
                     case 'createdAt':
                     case 'updatedAt':
-                    case 'ulid':
                     case 'isOfficial':
                     case 'isCommunity':
                         $val->name = 'c.' . $val->name;
@@ -167,7 +155,9 @@ class ComicExternalRepository extends ServiceEntityRepository
                 $query->addOrderBy($val->name, $val->order);
             }
         } else {
-            $query->orderBy('c.ulid');
+            $query->orderBy('clw.name');
+            $query->orderBy('clw.host');
+            $query->orderBy('cl.relativeReference');
         }
 
         $query->setMaxResults($limit);
@@ -238,17 +228,6 @@ class ComicExternalRepository extends ServiceEntityRepository
                     if ($c < 1) break;
 
                     $q02Func($q02, $query);
-
-                    foreach ($val as $k => $v) {
-                        switch ($v) {
-                            case null:
-                                $val[$k] = '';
-                                break;
-                            case '':
-                                $val[$k] = null;
-                                break;
-                        }
-                    }
 
                     if ($c == 1) {
                         $query->andWhere('cl.relativeReference = :linkRelativeReference');

@@ -14,7 +14,6 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: ComicSynopsisRepository::class)]
 #[ORM\Table(name: 'comic_synopsis')]
 #[ORM\UniqueConstraint(columns: ['comic_id', 'ulid'])]
-#[ORM\UniqueConstraint(columns: ['comic_id', 'language_id', 'source'])]
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Cache(usage: 'NONSTRICT_READ_WRITE')]
 class ComicSynopsis
@@ -51,8 +50,8 @@ class ComicSynopsis
     #[Serializer\Groups(['comic', 'comicSynopsis'])]
     private ?string $content = null;
 
-    #[ORM\Column(length: 32, options: ['default' => ''])]
-    #[Assert\Length(min: 1, max: 32)]
+    #[ORM\Column(length: 32, nullable: true)]
+    #[Assert\NotBlank(allowNull: true), Assert\Length(min: 1, max: 32)]
     #[Serializer\Groups(['comic', 'comicSynopsis'])]
     private ?string $source = null;
 
@@ -61,16 +60,12 @@ class ComicSynopsis
     {
         $this->setCreatedAt(new \DateTimeImmutable());
         $this->setUlid(new Ulid());
-
-        if ($this->source == null) $this->setSource('');
     }
 
     #[ORM\PreUpdate]
     public function onPreUpdate(PreUpdateEventArgs $args)
     {
         $this->setUpdatedAt(new \DateTimeImmutable());
-
-        if ($this->source == null) $this->setSource('');
     }
 
     public function getId(): ?int
@@ -172,10 +167,6 @@ class ComicSynopsis
 
     public function getSource(): ?string
     {
-        if ($this->source == '') {
-            return null;
-        }
-
         return $this->source;
     }
 

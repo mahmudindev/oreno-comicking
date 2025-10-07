@@ -51,10 +51,6 @@ class ComicChapter
     #[Serializer\Groups(['comic', 'comicChapter'])]
     private ?\DateTimeImmutable $releasedAt = null;
 
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name: 'thumbnail_link_id')]
-    private ?Link $thumbnailLink = null;
-
     #[ORM\ManyToOne(inversedBy: 'chapters')]
     #[ORM\JoinColumn(name: 'volume_id')]
     private ?ComicVolume $volume = null;
@@ -75,16 +71,12 @@ class ComicChapter
     public function onPrePersist(PrePersistEventArgs $args)
     {
         $this->setCreatedAt(new \DateTimeImmutable());
-
-        if ($this->version == null) $this->setVersion('');
     }
 
     #[ORM\PreUpdate]
     public function onPreUpdate(PreUpdateEventArgs $args)
     {
         $this->setUpdatedAt(new \DateTimeImmutable());
-
-        if ($this->version == null) $this->setVersion('');
     }
 
     public function getId(): ?int
@@ -174,38 +166,6 @@ class ComicChapter
     public function setReleasedAt(?\DateTimeImmutable $releasedAt): static
     {
         $this->releasedAt = $releasedAt;
-
-        return $this;
-    }
-
-    public function getThumbnailLink(): ?Link
-    {
-        return $this->thumbnailLink;
-    }
-
-    #[Serializer\Groups(['comic', 'comicChapter'])]
-    public function getThumbnailLinkWebsiteHost(): ?string
-    {
-        if ($this->thumbnailLink == null) {
-            return null;
-        }
-
-        return $this->thumbnailLink->getWebsiteHost();
-    }
-
-    #[Serializer\Groups(['comic', 'comicChapter'])]
-    public function getThumbnailLinkRelativeReference(): ?string
-    {
-        if ($this->thumbnailLink == null) {
-            return null;
-        }
-
-        return $this->thumbnailLink->getRelativeReference();
-    }
-
-    public function setThumbnailLink(?Link $thumbnailLink): static
-    {
-        $this->thumbnailLink = $thumbnailLink;
 
         return $this;
     }

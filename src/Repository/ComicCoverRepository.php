@@ -4,7 +4,6 @@ namespace App\Repository;
 
 use App\Entity\ComicCover;
 use App\Model\OrderByDto;
-use App\Util\Href;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -27,8 +26,7 @@ class ComicCoverRepository extends ServiceEntityRepository
     ): array {
         $query = $this->createQueryBuilder('c')
             ->leftJoin('c.comic', 'cc')->addSelect('cc')
-            ->leftJoin('c.link', 'cl')->addSelect('cl')
-            ->leftJoin('cl.website', 'clw')->addSelect('clw');
+            ->leftJoin('c.image', 'ci')->addSelect('ci');
 
         foreach ($criteria as $key => $val) {
             $val = \array_unique($val);
@@ -46,55 +44,6 @@ class ComicCoverRepository extends ServiceEntityRepository
                     $query->andWhere('cc.code IN (:comicCodes)');
                     $query->setParameter('comicCodes', $val);
                     break;
-                case 'linkWebsiteHosts':
-                    $c = \count($val);
-                    if ($c < 1) break;
-
-                    if ($c == 1) {
-                        $query->andWhere('clw.host = :linkWebsiteHost');
-                        $query->setParameter('linkWebsiteHost', $val[0]);
-                        break;
-                    }
-                    $query->andWhere('clw.host IN (:linkWebsiteHosts)');
-                    $query->setParameter('linkWebsiteHosts', $val);
-                    break;
-                case 'linkRelativeReferences':
-                    $c = \count($val);
-                    if ($c < 1) break;
-
-                    foreach ($val as $k => $v) {
-                        switch ($v) {
-                            case null:
-                                $val[$k] = '';
-                                break;
-                            case '':
-                                $val[$k] = null;
-                                break;
-                        }
-                    }
-
-                    if ($c == 1) {
-                        $query->andWhere('cl.relativeReference = :linkRelativeReference');
-                        $query->setParameter('linkRelativeReference', $val[0]);
-                        break;
-                    }
-                    $query->andWhere('cl.relativeReference IN (:linkRelativeReferences)');
-                    $query->setParameter('linkRelativeReferences', $val);
-                    break;
-                case 'linkHREFs':
-                    $c = \count($val);
-                    if ($c < 1) break;
-
-                    $qExOr = $query->expr()->orX();
-                    foreach ($val as $k => $v) {
-                        $href = new Href($v);
-
-                        $qExOr->add('clw.host = :linkHREFA' . $k . ' AND ' . 'cl.relativeReference = :linkHREFB' . $k);
-                        $query->setParameter('linkHREFA' . $k, $href->getHost());
-                        $query->setParameter('linkHREFB' . $k, $href->getRelativeReference() ?? '');
-                    }
-                    $query->andWhere($qExOr);
-                    break;
             }
         }
 
@@ -102,22 +51,17 @@ class ComicCoverRepository extends ServiceEntityRepository
             foreach ($orderBy as $key => $val) {
                 if (!($val instanceof OrderByDto)) continue;
 
-                if ($key > 7) break;
+                if ($key > 4) break;
 
                 switch ($val->name) {
                     case 'comicCode':
                         $val->name = 'cc.code';
                         break;
-                    case 'linkWebsiteHost':
-                        $val->name = 'clw.host';
-                        break;
-                    case 'linkRelativeReference':
-                        $val->name = 'cl.relativeReference';
+                    case 'imageULID':
+                        $val->name = 'ci.ulid';
                         break;
                     case 'createdAt':
                     case 'updatedAt':
-                    case 'ulid':
-                    case 'hint':
                         $val->name = 'c.' . $val->name;
                         break;
                     default:
@@ -160,38 +104,10 @@ class ComicCoverRepository extends ServiceEntityRepository
                     $query->addOrderBy($vname, $val->nulls);
                 }
 
-                switch ($val->name) {
-                    case 'c.hint':
-                        $query->addOrderBy($val->name, $val->order);
-
-                        if (isset($val->custom['prefer'])) {
-                            if ($val->custom['prefer'] == '') {
-                                break;
-                            }
-                            $vname = 'hintPrefer' . $key;
-                            $vvals = \explode('+', $val->custom['prefer']);
-                            $vselc = '(CASE';
-                            foreach ($vvals as $k => $v) {
-                                $v = \str_replace(['_', '%'], '', $v);
-
-                                $vselc .= ' WHEN c.hint LIKE :' . $vname . $k;
-                                $vselc .= ' THEN ' . (\count($vvals) - $k);
-                                $query->setParameter($vname . $k, $v . '%');
-                            }
-                            $vselc .= ' ELSE 0 END) AS HIDDEN ' . $vname;
-
-                            $query->addSelect($vselc);
-                            $query->addOrderBy($vname, 'DESC');
-                            break;
-                        }
-
-                        break;
-                    default:
-                        $query->addOrderBy($val->name, $val->order);
-                }
+                $query->addOrderBy($val->name, $val->order);
             }
         } else {
-            $query->orderBy('c.ulid');
+            $query->orderBy('ci.ulid');
         }
 
         $query->setMaxResults($limit);
@@ -214,13 +130,7 @@ class ComicCoverRepository extends ServiceEntityRepository
         $q02 = false;
         $q02Func = function (bool &$c, QueryBuilder &$q): void {
             if ($c) return;
-            $q->leftJoin('c.link', 'cl');
-            $c = true;
-        };
-        $q03 = false;
-        $q03Func = function (bool &$c, QueryBuilder &$q): void {
-            if ($c) return;
-            $q->leftJoin('cl.website', 'clw');
+            $q->leftJoin('c.image', 'ci');
             $c = true;
         };
 
@@ -241,63 +151,6 @@ class ComicCoverRepository extends ServiceEntityRepository
                     }
                     $query->andWhere('cc.code IN (:comicCodes)');
                     $query->setParameter('comicCodes', $val);
-                    break;
-                case 'linkWebsiteHosts':
-                    $c = \count($val);
-                    if ($c < 1) break;
-
-                    $q02Func($q02, $query);
-                    $q03Func($q03, $query);
-
-                    if ($c == 1) {
-                        $query->andWhere('clw.host = :linkWebsiteHost');
-                        $query->setParameter('linkWebsiteHost', $val[0]);
-                        break;
-                    }
-                    $query->andWhere('clw.host IN (:linkWebsiteHosts)');
-                    $query->setParameter('linkWebsiteHosts', $val);
-                    break;
-                case 'linkRelativeReferences':
-                    $c = \count($val);
-                    if ($c < 1) break;
-
-                    $q02Func($q02, $query);
-
-                    foreach ($val as $k => $v) {
-                        switch ($v) {
-                            case null:
-                                $val[$k] = '';
-                                break;
-                            case '':
-                                $val[$k] = null;
-                                break;
-                        }
-                    }
-
-                    if ($c == 1) {
-                        $query->andWhere('cl.relativeReference = :linkRelativeReference');
-                        $query->setParameter('linkRelativeReference', $val[0]);
-                        break;
-                    }
-                    $query->andWhere('cl.relativeReference IN (:linkRelativeReferences)');
-                    $query->setParameter('linkRelativeReferences', $val);
-                    break;
-                case 'linkHREFs':
-                    $c = \count($val);
-                    if ($c < 1) break;
-
-                    $q02Func($q02, $query);
-                    $q03Func($q03, $query);
-
-                    $qExOr = $query->expr()->orX();
-                    foreach ($val as $k => $v) {
-                        $href = new Href($v);
-
-                        $qExOr->add('clw.host = :linkHREFA' . $k . ' AND ' . 'cl.relativeReference = :linkHREFB' . $k);
-                        $query->setParameter('linkHREFA' . $k, $href->getHost());
-                        $query->setParameter('linkHREFB' . $k, $href->getRelativeReference() ?? '');
-                    }
-                    $query->andWhere($qExOr);
                     break;
             }
         }

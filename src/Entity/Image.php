@@ -2,7 +2,7 @@
 
 namespace App\Entity;
 
-use App\Repository\ComicVolumeCoverRepository;
+use App\Repository\ImageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\Event\PreUpdateEventArgs;
@@ -11,12 +11,11 @@ use Symfony\Component\Serializer\Annotation as Serializer;
 use Symfony\Component\Uid\Ulid;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: ComicVolumeCoverRepository::class)]
-#[ORM\Table(name: 'comic_volume_cover')]
-#[ORM\UniqueConstraint(columns: ['volume_id', 'image_id'])]
+#[ORM\Entity(repositoryClass: ImageRepository::class)]
+#[ORM\Table(name: 'image')]
 #[ORM\HasLifecycleCallbacks]
 #[ORM\Cache(usage: 'NONSTRICT_READ_WRITE')]
-class ComicVolumeCover
+class Image
 {
     #[ORM\Id]
     #[ORM\GeneratedValue(strategy: 'IDENTITY')]
@@ -24,27 +23,32 @@ class ComicVolumeCover
     private ?int $id = null;
 
     #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE)]
-    #[Serializer\Groups(['comic', 'comicVolume', 'comicVolumeCover'])]
+    #[Serializer\Groups(['image'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(type: Types::DATETIMETZ_IMMUTABLE, nullable: true)]
-    #[Serializer\Groups(['comic', 'comicVolume', 'comicVolumeCover'])]
+    #[Serializer\Groups(['image'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\ManyToOne(inversedBy: 'covers')]
-    #[ORM\JoinColumn(name: 'volume_id', nullable: false, onDelete: 'CASCADE')]
-    #[Assert\NotNull]
-    private ?ComicVolume $volume = null;
+    #[ORM\Column(type: 'ulid', unique: true)]
+    #[Serializer\Groups(['image'])]
+    private ?Ulid $ulid = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(name: 'image_id', nullable: false, onDelete: 'CASCADE')]
+    #[ORM\JoinColumn(name: 'link_id', nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull]
-    private ?Image $image = null;
+    private ?Link $link = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    #[Assert\NotBlank(allowNull: true), Assert\Length(min: 1, max: 255)]
+    #[Serializer\Groups(['image'])]
+    private ?string $alternativeText = null;
 
     #[ORM\PrePersist]
     public function onPrePersist(PrePersistEventArgs $args)
     {
         $this->setCreatedAt(new \DateTimeImmutable());
+        $this->setUlid(new Ulid());
     }
 
     #[ORM\PreUpdate]
@@ -82,56 +86,58 @@ class ComicVolumeCover
         return $this;
     }
 
-    public function getVolume(): ?ComicVolume
+    public function getUlid(): ?Ulid
     {
-        return $this->volume;
+        return $this->ulid;
     }
 
-    #[Serializer\Groups(['comicVolumeCover'])]
-    public function getVolumeComicCode(): ?string
+    public function setUlid(Ulid $ulid): static
     {
-        if ($this->volume == null) {
-            return null;
-        }
-
-        return $this->volume->getComicCode();
-    }
-
-    #[Serializer\Groups(['comicVolumeCover'])]
-    public function getVolumeNumber(): ?float
-    {
-        if ($this->volume == null) {
-            return null;
-        }
-
-        return $this->volume->getNumber();
-    }
-
-    public function setVolume(?ComicVolume $volume): static
-    {
-        $this->volume = $volume;
+        $this->ulid = $ulid;
 
         return $this;
     }
 
-    public function getImage(): ?Image
+    public function getLink(): ?Link
     {
-        return $this->image;
+        return $this->link;
     }
 
-    #[Serializer\Groups(['comic', 'comicVolume', 'comicVolumeCover'])]
-    public function getImageULID(): ?Ulid
+    #[Serializer\Groups(['image'])]
+    public function getLinkWebsiteHost(): ?string
     {
-        if ($this->image == null) {
+        if ($this->link == null) {
             return null;
         }
 
-        return $this->image->getUlid();
+        return $this->link->getWebsiteHost();
     }
 
-    public function setImage(?Image $image): static
+    #[Serializer\Groups(['image'])]
+    public function getLinkRelativeReference(): ?string
     {
-        $this->image = $image;
+        if ($this->link == null) {
+            return null;
+        }
+
+        return $this->link->getRelativeReference();
+    }
+
+    public function setLink(?Link $link): static
+    {
+        $this->link = $link;
+
+        return $this;
+    }
+
+    public function getAlternativeText(): ?string
+    {
+        return $this->alternativeText;
+    }
+
+    public function setAlternativeText(?string $alternativeText): static
+    {
+        $this->alternativeText = $alternativeText;
 
         return $this;
     }

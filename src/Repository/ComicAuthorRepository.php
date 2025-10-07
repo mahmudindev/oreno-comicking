@@ -26,7 +26,7 @@ class ComicAuthorRepository extends ServiceEntityRepository
     ): array {
         $query = $this->createQueryBuilder('c')
             ->leftJoin('c.comic', 'cc')->addSelect('cc')
-            ->leftJoin('c.type', 'ct')->addSelect('ct')
+            ->leftJoin('c.position', 'ct')->addSelect('ct')
             ->leftJoin('c.person', 'cp')->addSelect('cp');
 
         foreach ($criteria as $key => $val) {
@@ -45,17 +45,17 @@ class ComicAuthorRepository extends ServiceEntityRepository
                     $query->andWhere('cc.code IN (:comicCodes)');
                     $query->setParameter('comicCodes', $val);
                     break;
-                case 'typeCodes':
+                case 'positionCodes':
                     $c = \count($val);
                     if ($c < 1) break;
 
                     if ($c == 1) {
-                        $query->andWhere('ct.code = :typeCode');
-                        $query->setParameter('typeCode', $val[0]);
+                        $query->andWhere('ct.code = :positionCode');
+                        $query->setParameter('positionCode', $val[0]);
                         break;
                     }
-                    $query->andWhere('ct.code IN (:typeCodes)');
-                    $query->setParameter('typeCodes', $val);
+                    $query->andWhere('ct.code IN (:positionCodes)');
+                    $query->setParameter('positionCodes', $val);
                     break;
             }
         }
@@ -70,7 +70,7 @@ class ComicAuthorRepository extends ServiceEntityRepository
                     case 'comicCode':
                         $val->name = 'cc.code';
                         break;
-                    case 'typeCode':
+                    case 'positionCode':
                         $val->name = 'ct.code';
                         break;
                     case 'personCode':
@@ -147,7 +147,7 @@ class ComicAuthorRepository extends ServiceEntityRepository
         $q02 = false;
         $q02Func = function (bool &$c, QueryBuilder &$q): void {
             if ($c) return;
-            $q->leftJoin('c.type', 'ct');
+            $q->leftJoin('c.position', 'ct');
             $c = true;
         };
 
@@ -169,19 +169,19 @@ class ComicAuthorRepository extends ServiceEntityRepository
                     $query->andWhere('cc.code IN (:comicCodes)');
                     $query->setParameter('comicCodes', $val);
                     break;
-                case 'typeCodes':
+                case 'positionCodes':
                     $c = \count($val);
                     if ($c < 1) break;
 
                     $q02Func($q02, $query);
 
                     if ($c == 1) {
-                        $query->andWhere('ct.code = :typeCode');
-                        $query->setParameter('typeCode', $val[0]);
+                        $query->andWhere('ct.code = :positionCode');
+                        $query->setParameter('positionCode', $val[0]);
                         break;
                     }
-                    $query->andWhere('ct.code IN (:typeCodes)');
-                    $query->setParameter('typeCodes', $val);
+                    $query->andWhere('ct.code IN (:positionCodes)');
+                    $query->setParameter('positionCodes', $val);
                     break;
             }
         }

@@ -108,7 +108,7 @@ class ComicSerializationRepository extends ServiceEntityRepository
                 $query->addOrderBy($val->name, $val->order);
             }
         } else {
-            $query->orderBy('ch.code');
+            $query->orderBy('cm.code');
         }
 
         $query->setMaxResults($limit);

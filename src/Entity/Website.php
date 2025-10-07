@@ -31,7 +31,7 @@ class Website
     #[Serializer\Groups(['website'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[ORM\Column(length: 64, unique: true)]
+    #[ORM\Column(length: 64, unique: true, options: ['collation' => 'utf8mb4_bin'])]
     #[Assert\NotNull, Assert\Length(max: 64)]
     #[Serializer\Groups(['website'])]
     private ?string $host = null;

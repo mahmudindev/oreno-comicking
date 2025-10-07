@@ -9,6 +9,7 @@ use App\Repository\ComicExternalRepository;
 use App\Repository\LinkRepository;
 use App\Repository\WebsiteRepository;
 use App\Util\UrlQuery;
+use App\Util\Href;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
@@ -18,7 +19,6 @@ use Symfony\Component\HttpKernel\Attribute as HttpKernel;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\UnsupportedMediaTypeHttpException;
 use Symfony\Component\Routing\Attribute as Routing;
-use Symfony\Component\Uid\Ulid;
 use Symfony\Component\Validator\Exception\ValidationFailedException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -43,7 +43,7 @@ class RestComicExternalController extends AbstractController
         string $comicCode,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1])] int $page = 1,
         #[HttpKernel\MapQueryParameter(options: ['min_range' => 1, 'max_range' => 30])] int $limit = 10,
-        #[HttpKernel\MapQueryParameter] string $order = null
+        #[HttpKernel\MapQueryParameter] string | null $order = null
     ): Response {
         $queries = new UrlQuery($request->server->get('QUERY_STRING'));
 
@@ -54,7 +54,9 @@ class RestComicExternalController extends AbstractController
         $criteria['linkHREFs'] = $queries->all('linkHREF', 'linkHREFs');
         $orderBy = \array_map([OrderByDto::class, 'parse'], $queries->all('orderBy', 'orderBys'));
         if ($order) {
-            \array_unshift($orderBy, new OrderByDto('ulid', $order));
+            \array_unshift($orderBy, new OrderByDto('linkWebsiteName', $order));
+            \array_unshift($orderBy, new OrderByDto('linkWebsiteHost', $order));
+            \array_unshift($orderBy, new OrderByDto('linkRelativeReference', $order));
         }
         $offset = $limit * ($page - 1);
 
@@ -96,7 +98,7 @@ class RestComicExternalController extends AbstractController
                         'website' => $this->websiteRepository->findOneBy([
                             'host' => $content['linkWebsiteHost']
                         ]),
-                        'relativeReference' => $content['linkRelativeReference'] ?? ''
+                        'relativeReference' => $content['linkRelativeReference'] ?? '/'
                     ]);
                     if (!$r1) throw new BadRequestException('Link does not exists.');
                     $result->setLink($r1);
@@ -116,21 +118,25 @@ class RestComicExternalController extends AbstractController
         $headers = [];
         $headers['Location'] = $this->generateUrl('rest_comic_external_get', [
             'comicCode' => $result->getComicCode(),
-            'ulid' => $result->getUlid()
+            'linkHREF' => \rawurlencode($result->getLinkWebsiteHost() . $result->getLinkRelativeReference())
         ]);
 
         return $this->json($result, Response::HTTP_CREATED, $headers, ['groups' => ['comic']]);
     }
 
-    #[Routing\Route('/{ulid}', name: 'get', methods: [Request::METHOD_GET])]
+    #[Routing\Route('/{linkHREF}', name: 'get', methods: [Request::METHOD_GET])]
     public function get(
         Request $request,
         string $comicCode,
-        Ulid $ulid
+        string $linkHREF
     ): Response {
+        $pathParams = new Href($linkHREF);
         $result = $this->comicExternalRepository->findOneBy([
             'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
-            'ulid' => $ulid
+            'link' => $this->linkRepository->findOneBy([
+                'website' => $this->websiteRepository->findOneBy(['host' => $pathParams->getHost()]),
+                'relativeReference' => $pathParams->getRelativeReference() ?? '/'
+            ])
         ]);
         if (!$result) throw new NotFoundHttpException('Comic External not found.');
 
@@ -144,15 +150,19 @@ class RestComicExternalController extends AbstractController
         return $response;
     }
 
-    #[Routing\Route('/{ulid}', name: 'patch', methods: [Request::METHOD_PATCH])]
+    #[Routing\Route('/{linkHREF}', name: 'patch', methods: [Request::METHOD_PATCH])]
     public function patch(
         Request $request,
         string $comicCode,
-        Ulid $ulid
+        string $linkHREF
     ): Response {
+        $pathParams = new Href($linkHREF);
         $result = $this->comicExternalRepository->findOneBy([
             'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
-            'ulid' => $ulid
+            'link' => $this->linkRepository->findOneBy([
+                'website' => $this->websiteRepository->findOneBy(['host' => $pathParams->getHost()]),
+                'relativeReference' => $pathParams->getRelativeReference() ?? '/'
+            ])
         ]);
         if (!$result) throw new NotFoundHttpException('Comic External not found.');
         switch ($request->headers->get('Content-Type')) {
@@ -163,7 +173,7 @@ class RestComicExternalController extends AbstractController
                         'website' => $this->websiteRepository->findOneBy([
                             'host' => $content['linkWebsiteHost']
                         ]),
-                        'relativeReference' => $content['linkRelativeReference'] ?? ''
+                        'relativeReference' => $content['linkRelativeReference'] ?? '/'
                     ]);
                     if (!$r1) throw new BadRequestException('Link does not exists.');
                     $result->setLink($r1);
@@ -181,20 +191,24 @@ class RestComicExternalController extends AbstractController
         $headers = [];
         $headers['Location'] = $this->generateUrl('rest_comic_external_get', [
             'comicCode' => $result->getComicCode(),
-            'ulid' => $result->getUlid()
+            'linkHREF' => \rawurlencode($result->getLinkWebsiteHost() . $result->getLinkRelativeReference())
         ]);
 
         return $this->json($result, Response::HTTP_OK, $headers, ['groups' => ['comic']]);
     }
 
-    #[Routing\Route('/{ulid}', name: 'delete', methods: [Request::METHOD_DELETE])]
+    #[Routing\Route('/{linkHREF}', name: 'delete', methods: [Request::METHOD_DELETE])]
     public function delete(
         string $comicCode,
-        Ulid $ulid
+        string $linkHREF
     ): Response {
+        $pathParams = new Href($linkHREF);
         $result = $this->comicExternalRepository->findOneBy([
             'comic' => $this->comicRepository->findOneBy(['code' => $comicCode]),
-            'ulid' => $ulid
+            'link' => $this->linkRepository->findOneBy([
+                'website' => $this->websiteRepository->findOneBy(['host' => $pathParams->getHost()]),
+                'relativeReference' => $pathParams->getRelativeReference() ?? '/'
+            ])
         ]);
         if (!$result) throw new NotFoundHttpException('Comic External not found.');
         $this->entityManager->remove($result);

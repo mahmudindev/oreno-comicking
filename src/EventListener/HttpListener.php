@@ -36,22 +36,22 @@ class HttpListener
                 return;
             }
 
-            $OldPathInfo = $request->getPathInfo();
+            $oldPathInfo = $request->getPathInfo();
 
-            if (\preg_match('/^\/(_|assets\/?)/', $OldPathInfo)) {
+            if (\preg_match('/^\/(_|assets\/?)/', $oldPathInfo)) {
                 return;
             }
 
 
-            $NewpathInfo = \join('/', \array_map(function (string $path) {
+            $newPathInfo = \join('/', \array_map(function (string $path) {
                 return \rawurlencode($path);
-            }, \explode('/', $OldPathInfo)));
+            }, \explode('/', $oldPathInfo)));
 
-            if ($OldPathInfo == $NewpathInfo) {
+            if ($oldPathInfo == $newPathInfo) {
                 return;
             }
 
-            $request->server->set('REQUEST_URI', $NewpathInfo);
+            $request->server->set('REQUEST_URI', $newPathInfo);
             $request->attributes->set('_app_uri_rawurlencode', true);
 
             $event->setResponse($this->httpKernel->handle(
