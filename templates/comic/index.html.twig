@@ -5,11 +5,11 @@
 {% block main %}
     {{ include('comic/_style.html.twig') }}
 
-    <div class="d-flex flex-column justify-content-center hero">
-        <h2 class="align-self-center">Comics</h2>
-    </div>
-
     <div class="d-flex flex-column gap-4 p-4">
+        <div class="d-flex flex-column">
+            <h2 class="align-self-center">Comics</h2>
+        </div>
+
         {{ render(controller('App\\Controller\\ComicController::fragmentList', {
             limit: paramLimit,
             page: paramPage,

@@ -3,15 +3,11 @@
 {% block title %}{{ parent() }}: Comic Catalog{% endblock %}
 
 {% block main %}
-    <div class="d-flex flex-column justify-content-center hero">
-        <h2 class="align-self-center">Comic Catalog</h2>
-    </div>
-
     <div class="d-flex flex-column gap-4 p-4">
         {{ include('comic/_style.html.twig') }}
 
         <div class="d-flex flex-row px-1">
-            <h3 class="fs-5 fw-semibold m-0 me-auto">New Comic</h3>
+            <h3 class="fs-5 fw-semibold m-0 me-auto">New Comics</h3>
             <a href="{{
                 path('app_comic_index')
                 ~ '?page=2&orderBy=createdAt%20desc'

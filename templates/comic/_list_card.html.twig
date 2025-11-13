@@ -39,7 +39,7 @@
             {% if comic_synopsis.content ?? false %}
                 {{ comic_synopsis.content|markdown_to_html }}
             {% else %}
-                {{ 'Empty synopsis.' }}
+                {{ '-' }}
             {% endif %}
         </div>
     </div>

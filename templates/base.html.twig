@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ app.request.locale }}" data-bs-theme="light">
+<html lang="{{ app.request.locale }}" data-bs-theme="dark">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -31,7 +31,7 @@
             ></script>
         {% endblock %}
     </head>
-    <body class="min-vh-100 bg-body-tertiary">
+    <body class="min-vh-100">
         {{ include('_style.html.twig') }}
 
         {% block body %}
@@ -63,15 +63,15 @@
                 <main class="container-fluid p-0">
                     {% block main %}{% endblock %}
                 </main>
-
-                <footer class="d-flex flex-column p-2 bg-body-secondary">
-                    <span class="align-self-center"><a
-                        href="//{{ app_host_oreno }}"
-                        class="text-decoration-none"
-                        rel="external"
-                    >Oreno</a> - {{ app_name }} {{ 'now'|date('Y') }}</span>
-                </footer>
             </div>
+
+            <footer class="d-flex flex-column p-4 bg-body-tertiary">
+                <span class="align-self-center"><a
+                    href="//{{ app_host_oreno }}"
+                    class="text-decoration-none"
+                    rel="external"
+                >Oreno</a> - {{ app_name }} {{ 'now'|date('Y') }}</span>
+            </footer>
         {% endblock %}
     </body>
 </html>
