@@ -20,7 +20,6 @@ export interface QueryParameter {
 	offset?: number;
 	page?: number;
 	orderBys?: OrderBy[];
-	criteria?: Record<string, unknown>;
 }
 
 export function validateQueryParameter(v: QueryParameter) {
@@ -34,20 +33,6 @@ export function validateQueryParameter(v: QueryParameter) {
 				throw e;
 			}
 		});
-	}
-
-	for (const k in v.criteria) {
-		if (k == '') {
-			throw new ValidationError('criteria ' + k + ' cannot be empty');
-		}
-
-		if (k.length > 32) {
-			throw new ValidationError('criteria ' + k + ' cannot be greater than 32 characters');
-		}
-
-		if (k.length < 1) {
-			throw new ValidationError('criteria ' + k + ' cannot be less than 1 characters');
-		}
 	}
 }
 
@@ -525,6 +510,7 @@ export interface SetCategory {
 export interface ParameterCategory extends QueryParameter {
 	criteriaTypeCodes?: string[];
 	criteriaCodes?: string[];
+	criteriaTypeCodeCodes?: string[];
 	criteriaParentCodes?: string[];
 }
 
@@ -542,6 +528,18 @@ export function validateParameterCategory(v: ParameterCategory) {
 	v.criteriaCodes?.forEach((v, k) => {
 		try {
 			validateCategoryCode(v);
+		} catch (e) {
+			if (e instanceof ValidationError) appendErrorMessage(e, 'index ' + k + ' ');
+
+			throw e;
+		}
+	});
+
+	v.criteriaTypeCodeCodes?.forEach((v, k) => {
+		try {
+			const typeCodeCode = v.split(':', 2);
+
+			validateCategoryKey(typeCodeCode[0], typeCodeCode[1]);
 		} catch (e) {
 			if (e instanceof ValidationError) appendErrorMessage(e, 'index ' + k + ' ');
 
@@ -666,6 +664,7 @@ export interface SetTag {
 export interface ParameterTag extends QueryParameter {
 	criteriaTypeCodes?: string[];
 	criteriaCodes?: string[];
+	criteriaTypeCodeCodes?: string[];
 }
 
 export function validateParameterTag(v: ParameterTag) {
@@ -682,6 +681,18 @@ export function validateParameterTag(v: ParameterTag) {
 	v.criteriaCodes?.forEach((v, k) => {
 		try {
 			validateCategoryCode(v);
+		} catch (e) {
+			if (e instanceof ValidationError) appendErrorMessage(e, 'index ' + k + ' ');
+
+			throw e;
+		}
+	});
+
+	v.criteriaTypeCodeCodes?.forEach((v, k) => {
+		try {
+			const typeCodeCode = v.split(':', 2);
+
+			validateTagKey(typeCodeCode[0], typeCodeCode[1]);
 		} catch (e) {
 			if (e instanceof ValidationError) appendErrorMessage(e, 'index ' + k + ' ');
 
@@ -806,6 +817,10 @@ export interface SetComic {
 
 export interface ParameterComic extends QueryParameter {
 	criteriaCodes?: string[];
+	criteriaExternalLinkWebsiteHost?: string[];
+	criteriaExternalRelativeReferences?: string[];
+	criteriaExternalHREFs?: string[];
+
 	criteriaExternals?: ParameterComicExternal[];
 }
 
@@ -1177,6 +1192,7 @@ export interface ParameterComicAuthor extends QueryParameter {
 	criteriaComicCodes?: string[];
 	criteriaPositionCodes?: string[];
 	criteriaPersonCodes?: string[];
+	criteriaPositionCodePersonCodes?: string[];
 }
 
 export function validateParameterComicAuthor(v: ParameterComicAuthor) {
@@ -1760,8 +1776,22 @@ export interface SetComicAuthorPosition {
 	name?: string;
 }
 
-export interface ParameterComicAuthorPosition {
-	code?: string;
+export interface ParameterComicAuthorPosition extends QueryParameter {
+	criteriaCodes?: string[];
+}
+
+export function validateParameterComicAuthorPosition(v: ParameterComicAuthorPosition) {
+	v.criteriaCodes?.forEach((v, k) => {
+		try {
+			validateComicAuthorPositionKey(v);
+		} catch (e) {
+			if (e instanceof ValidationError) appendErrorMessage(e, 'index ' + k + ' ');
+
+			throw e;
+		}
+	});
+
+	validateQueryParameter(v);
 }
 
 // + Comic Relation Type

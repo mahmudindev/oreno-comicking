@@ -130,4 +130,8 @@ export interface ParameterComicChapter extends model.ParameterComicChapter {
 	criteriaComicIDs?: number[];
 }
 
+export interface ComicAuthorPosition extends model.ComicAuthorPosition {
+	id: number;
+}
+
 export * from '$lib/model';

@@ -557,7 +557,7 @@ export async function selectLink(db: DB, param: model.ParameterLink): Promise<mo
 			query = query.where((eb) => {
 				const ors: Expression<SqlBool>[] = [];
 
-				param.criteriaHREFs?.forEach((v) => {
+				ct3.forEach((v) => {
 					const href = new HREF(v);
 
 					ors.push(
@@ -740,6 +740,14 @@ export async function deleteLinkByKey(
 export async function countLink(db: DB, param: model.ParameterLink) {
 	let query = db.selectFrom('link').select((eb) => eb.fn.countAll<number>().as('count'));
 
+	let join0 = false;
+	const jn0 = function () {
+		if (join0) return;
+
+		query = query.innerJoin('website', 'website.id', 'link.website_id');
+		join0 = true;
+	};
+
 	const ct0 = param.criteriaWebsiteIDs ?? [];
 	if (ct0.length > 0) {
 		if (ct0.length == 1) {
@@ -748,14 +756,6 @@ export async function countLink(db: DB, param: model.ParameterLink) {
 			query = query.where('website_id', 'in', ct0);
 		}
 	}
-
-	let join0 = false;
-	const jn0 = function () {
-		if (join0) return;
-
-		query = query.innerJoin('website', 'website.id', 'link.website_id');
-		join0 = true;
-	};
 
 	const ct1 = param.criteriaWebsiteHosts ?? [];
 	if (ct1.length > 0) {
@@ -798,7 +798,7 @@ export async function countLink(db: DB, param: model.ParameterLink) {
 			query = query.where((eb) => {
 				const ors: Expression<SqlBool>[] = [];
 
-				param.criteriaHREFs?.forEach((v) => {
+				ct3.forEach((v) => {
 					const href = new HREF(v);
 
 					ors.push(
@@ -1463,21 +1463,52 @@ export async function selectCategory(
 		}
 	}
 
-	const ct4 = param.criteriaParentIDs ?? [];
+	const ct4 = param.criteriaTypeCodeCodes ?? [];
 	if (ct4.length > 0) {
-		if (ct4.length == 1) {
-			query = query.where('category.parent_id', '=', ct4[0]);
+		if (ct3.length == 1) {
+			const typeCodeCode = ct4[0].split(':', 2);
+
+			query = query.where((eb) =>
+				eb.and([
+					eb('category_type.code', '=', typeCodeCode[0]),
+					eb('category.code', '=', typeCodeCode[1])
+				])
+			);
 		} else {
-			query = query.where('category.parent_id', 'in', ct4);
+			query = query.where((eb) => {
+				const ors: Expression<SqlBool>[] = [];
+
+				ct4.forEach((v) => {
+					const typeCodeCode = v.split(':', 2);
+
+					ors.push(
+						eb.and([
+							eb('category_type.code', '=', typeCodeCode[0]),
+							eb('category.code', '=', typeCodeCode[1]),
+						])
+					);
+				});
+
+				return eb.or(ors);
+			});
 		}
 	}
 
-	const ct5 = param.criteriaParentCodes ?? [];
+	const ct5 = param.criteriaParentIDs ?? [];
 	if (ct5.length > 0) {
 		if (ct5.length == 1) {
-			query = query.where('parent.code', '=', ct5[0]);
+			query = query.where('category.parent_id', '=', ct5[0]);
 		} else {
-			query = query.where('parent.code', 'in', ct5);
+			query = query.where('category.parent_id', 'in', ct5);
+		}
+	}
+
+	const ct6 = param.criteriaParentCodes ?? [];
+	if (ct6.length > 0) {
+		if (ct6.length == 1) {
+			query = query.where('parent.code', '=', ct6[0]);
+		} else {
+			query = query.where('parent.code', 'in', ct6);
 		}
 	}
 
@@ -1651,6 +1682,14 @@ export async function deleteCategoryByKey(
 export async function countCategory(db: DB, param: model.ParameterCategory): Promise<number> {
 	let query = db.selectFrom('category').select((eb) => eb.fn.countAll<number>().as('count'));
 
+	let join0 = false;
+	const jn0 = function () {
+		if (join0) return;
+
+		query = query.innerJoin('category_type', 'category_type.id', 'category.type_id');
+		join0 = true;
+	};
+
 	const ct0 = param.criteriaTypeIDs ?? [];
 	if (ct0.length > 0) {
 		if (ct0.length == 1) {
@@ -1662,12 +1701,14 @@ export async function countCategory(db: DB, param: model.ParameterCategory): Pro
 
 	const ct1 = param.criteriaTypeCodes ?? [];
 	if (ct1.length > 0) {
-		const querx = query.innerJoin('category_type', 'category_type.id', 'category.type_id');
+		const { ref } = db.dynamic;
+
+		jn0();
 
 		if (ct1.length == 1) {
-			query = querx.where('category_type.code', '=', ct1[0]);
+			query = query.where(ref('category_type.code'), '=', ct1[0]);
 		} else {
-			query = querx.where('category_type.code', 'in', ct1);
+			query = query.where(ref('category_type.code'), 'in', ct1);
 		}
 	}
 
@@ -1689,23 +1730,58 @@ export async function countCategory(db: DB, param: model.ParameterCategory): Pro
 		}
 	}
 
-	const ct4 = param.criteriaParentIDs ?? [];
+	const ct4 = param.criteriaTypeCodeCodes ?? [];
 	if (ct4.length > 0) {
-		if (ct4.length == 1) {
-			query = query.where('category.parent_id', '=', ct4[0]);
+		const { ref } = db.dynamic;
+
+		jn0();
+
+		if (ct3.length == 1) {
+			const typeCodeCode = ct4[0].split(':', 2);
+
+			query = query.where((eb) =>
+				eb.and([
+					eb(ref('category_type.code'), '=', typeCodeCode[0]),
+					eb('category.code', '=', typeCodeCode[1])
+				])
+			);
 		} else {
-			query = query.where('category.parent_id', 'in', ct4);
+			query = query.where((eb) => {
+				const ors: Expression<SqlBool>[] = [];
+
+				ct4.forEach((v) => {
+					const typeCodeCode = v.split(':', 2);
+
+					ors.push(
+						eb.and([
+							eb(ref('category_type.code'), '=', typeCodeCode[0]),
+							eb('category.code', '=', typeCodeCode[1])
+						])
+					);
+				});
+
+				return eb.or(ors);
+			});
 		}
 	}
 
-	const ct5 = param.criteriaParentCodes ?? [];
+	const ct5 = param.criteriaParentIDs ?? [];
 	if (ct5.length > 0) {
+		if (ct5.length == 1) {
+			query = query.where('category.parent_id', '=', ct5[0]);
+		} else {
+			query = query.where('category.parent_id', 'in', ct5);
+		}
+	}
+
+	const ct6 = param.criteriaParentCodes ?? [];
+	if (ct6.length > 0) {
 		const querx = query.innerJoin('category as parent', 'parent.id', 'category.parent_id');
 
-		if (ct5.length == 1) {
-			query = querx.where('parent.code', '=', ct5[0]);
+		if (ct6.length == 1) {
+			query = querx.where('parent.code', '=', ct6[0]);
 		} else {
-			query = querx.where('parent.code', 'in', ct5);
+			query = querx.where('parent.code', 'in', ct6);
 		}
 	}
 
@@ -1988,6 +2064,37 @@ export async function selectTag(db: DB, param: model.ParameterTag): Promise<mode
 			query = query.where('tag.code', '=', ct3[0]);
 		} else {
 			query = query.where('tag.code', 'in', ct3);
+		}
+	}
+
+	const ct4 = param.criteriaTypeCodeCodes ?? [];
+	if (ct4.length > 0) {
+		if (ct3.length == 1) {
+			const typeCodeCode = ct4[0].split(':', 2);
+
+			query = query.where((eb) =>
+				eb.and([
+					eb('tag_type.code', '=', typeCodeCode[0]),
+					eb('tag.code', '=', typeCodeCode[1])
+				])
+			);
+		} else {
+			query = query.where((eb) => {
+				const ors: Expression<SqlBool>[] = [];
+
+				ct4.forEach((v) => {
+					const typeCodeCode = v.split(':', 2);
+
+					ors.push(
+						eb.and([
+							eb('tag_type.code', '=', typeCodeCode[0]),
+							eb('tag.code', '=', typeCodeCode[1]),
+						])
+					);
+				});
+
+				return eb.or(ors);
+			});
 		}
 	}
 
@@ -2457,6 +2564,9 @@ export async function selectComic(db: DB, param: model.ParameterComic): Promise<
 					break;
 				case 'totalVolume':
 					name = 'total_volume';
+					break;
+				case 'chapterCreatedAt':
+					name = 'comic_chapter.created_at';
 					break;
 				case 'code':
 				case 'nsfw':
@@ -5518,15 +5628,91 @@ interface ComicAuthorPositionTable {
 	name: string;
 }
 
-export async function selectComicAuthorPosition(): Promise<model.ComicAuthorPosition[]> {
-	const result = await database
-		.selectFrom('comic_author_position')
-		.selectAll()
-		.execute()
+export async function insertComicAuthorPosition(
+	db: DB,
+	data: model.NewComicAuthorPosition
+): Promise<model.ComicAuthorPosition> {
+	const result = await db
+		.insertInto('comic_author_position')
+		.values({
+			code: data.code,
+			name: data.name
+		})
+		.returningAll()
+		.executeTakeFirstOrThrow()
 		.catch(catchExecption);
+
+	return {
+		id: result.id,
+		createdAt: result.created_at,
+		updatedAt: result.updated_at,
+		code: result.code,
+		name: result.name
+	};
+}
+
+export async function selectComicAuthorPosition(
+	db: DB,
+	param: model.ParameterComicAuthorPosition
+): Promise<model.ComicAuthorPosition[]> {
+	let query = db.selectFrom('comic_author_position').selectAll();
+
+	const ct0 = param.criteriaCodes ?? [];
+	if (ct0.length > 0) {
+		if (ct0.length == 1) {
+			query = query.where('code', '=', ct0[0]);
+		} else {
+			query = query.where('code', 'in', ct0);
+		}
+	}
+
+	const obs = param.orderBys ?? [];
+	if (obs.length > 0) {
+		const { ref } = db.dynamic;
+
+		obs.forEach((v) => {
+			let name;
+			switch (v.name) {
+				case 'createdAt':
+					name = 'created_at';
+					break;
+				case 'updatedAt':
+					name = 'updated_at';
+					break;
+				case 'code':
+				case 'name':
+					name = v.name;
+					break;
+				default:
+					return;
+			}
+
+			query = query.orderBy(ref(name), (ob) => orderByItemHelper(ob, v));
+		});
+	} else {
+		query = query.orderBy('code');
+	}
+
+	const pgl = param.limit ?? 10;
+	if (pgl > 0) {
+		query = query.limit(param.limit ?? 0);
+	}
+
+	const pgo = param.offset ?? 0;
+	if (!param.page && pgo > 0) {
+		query = query.offset(param.offset ?? 0);
+	}
+
+	const pgp = param.page ?? 1;
+	if (pgp > 1) {
+		query = query.offset(pgl * (pgp - 1) + pgo);
+	}
+
+	const result = await query.execute().catch(catchExecption);
 
 	return result.map((result) => {
 		return {
+			id: result.id,
 			createdAt: result.created_at,
 			updatedAt: result.updated_at,
 			code: result.code,
@@ -5535,12 +5721,84 @@ export async function selectComicAuthorPosition(): Promise<model.ComicAuthorPosi
 	});
 }
 
-export async function countComicAuthorPosition(): Promise<number> {
-	const { count } = await database
+export async function selectComicAuthorPositionByKey(
+	db: DB,
+	code: string
+): Promise<model.ComicAuthorPosition | undefined> {
+	const result = await db
 		.selectFrom('comic_author_position')
-		.select((eb) => eb.fn.countAll<number>().as('count'))
+		.where('code', '=', code)
+		.selectAll()
+		.executeTakeFirst()
+		.catch(catchExecption);
+
+	if (!result) return undefined;
+
+	return {
+		id: result.id,
+		createdAt: result.created_at,
+		updatedAt: result.updated_at,
+		code: result.code,
+		name: result.name
+	};
+}
+
+export async function updateComicAuthorPositionByKey(
+	db: DB,
+	code: string,
+	data: model.SetComicAuthorPosition
+): Promise<model.ComicAuthorPosition | undefined> {
+	const result = await db
+		.updateTable('comic_author_position')
+		.set({
+			updated_at: new Date(),
+			code: data.code,
+			name: data.name
+		})
+		.where('code', '=', code)
+		.returningAll()
+		.executeTakeFirst()
+		.catch(catchExecption);
+
+	if (!result) return undefined;
+
+	return {
+		id: result.id,
+		createdAt: result.created_at,
+		updatedAt: result.updated_at,
+		code: result.code,
+		name: result.name
+	};
+}
+
+export async function deleteComicAuthorPositionByKey(db: DB, code: string): Promise<boolean> {
+	const result = await db
+		.deleteFrom('comic_author_position')
+		.where('code', '=', code)
 		.executeTakeFirstOrThrow()
 		.catch(catchExecption);
+
+	return result.numDeletedRows > 0;
+}
+
+export async function countComicAuthorPosition(
+	db: DB,
+	param: model.ParameterComicAuthorPosition
+): Promise<number> {
+	let query = db
+		.selectFrom('comic_author_position')
+		.select((eb) => eb.fn.countAll<number>().as('count'));
+
+	const ct0 = param.criteriaCodes ?? [];
+	if (ct0.length > 0) {
+		if (ct0.length == 1) {
+			query = query.where('code', '=', ct0[0]);
+		} else {
+			query = query.where('code', 'in', ct0);
+		}
+	}
+
+	const { count } = await query.executeTakeFirstOrThrow().catch(catchExecption);
 
 	return count;
 }

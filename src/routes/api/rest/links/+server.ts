@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import type { NewLink } from '$lib/model';
+import type { NewLink, ParameterLink } from '$lib/model';
 import { json } from '@sveltejs/kit';
 import { addLink, countLink, listLink } from '$lib/server/service';
 import { getDatabase, getUser } from '$lib/server/context';
@@ -13,18 +13,18 @@ export const GET: RequestHandler = async ({ request, url }) => {
 	const page = toNumber(url.searchParams.get('page')) || undefined;
 
 	const orderBys = parseOrderBys(url.searchParams.getAll('orderBy'));
-	const criteria: Record<string, unknown> = {};
-
-	criteria['websiteHosts'] = url.searchParams.getAll('websiteHost');
-	criteria['relativeReferences'] = url.searchParams.getAll('relativeReference');
-	criteria['hrefs'] = url.searchParams.getAll('href');
+	const param: ParameterLink = {
+		criteriaWebsiteHosts: url.searchParams.getAll('websiteHost'),
+		criteriaRelativeReferences: url.searchParams.getAll('relativeReference'),
+		criteriaHREFs: url.searchParams.getAll('href')
+	};
 
 	try {
 		const database = await getDatabase();
 		const user = await getUser({ headers: request.headers });
 
-		const result = await listLink({ user, database }, { limit, offset, page, criteria, orderBys });
-		const totalCount = await countLink({ user, database }, { criteria });
+		const result = await listLink({ user, database }, { limit, offset, page, orderBys, ...param });
+		const totalCount = await countLink({ user, database }, { ...param });
 
 		return json(result, {
 			headers: {

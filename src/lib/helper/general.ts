@@ -24,42 +24,6 @@ export function toDate(v: unknown): Date | null {
 	return new Date(v as number | string);
 }
 
-export function isStringArray(v: unknown): v is string[] {
-	if (v == undefined || v == null) {
-		return false;
-	}
-
-	if (!Array.isArray(v)) {
-		return false;
-	}
-
-	return v.every((v) => typeof v == 'string');
-}
-
-export function isStringRecord(v: unknown): v is Record<string, unknown> {
-	if (v == undefined || v == null) {
-		return false;
-	}
-
-	if (typeof v != 'object') {
-		return false;
-	}
-
-	return 'key' in v;
-}
-
-export function isStringRecordArray(v: unknown): v is Record<string, unknown>[] {
-	if (v == undefined || v == null) {
-		return false;
-	}
-
-	if (!Array.isArray(v)) {
-		return false;
-	}
-
-	return v.every((v) => isStringRecord(v));
-}
-
 export function stringRemoveSuffix(v: string, s: string): string {
 	if (!v.endsWith(s)) {
 		return v;

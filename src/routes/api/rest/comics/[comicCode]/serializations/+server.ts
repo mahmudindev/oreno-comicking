@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import type { NewComicSerialization } from '$lib/model';
+import type { NewComicSerialization, ParameterComicSerialization } from '$lib/model';
 import { json } from '@sveltejs/kit';
 import { getDatabase, getUser } from '$lib/server/context';
 import {
@@ -17,9 +17,10 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 	const page = toNumber(url.searchParams.get('page')) || undefined;
 
 	const orderBys = parseOrderBys(url.searchParams.getAll('orderBy'));
-	const criteria: Record<string, unknown> = {};
-
-	criteria['comicCodes'] = [params.comicCode];
+	const param: ParameterComicSerialization = {
+		criteriaComicCodes: [params.comicCode],
+		criteriaMagazineCodes: url.searchParams.getAll('magazineCode')
+	};
 
 	try {
 		const database = await getDatabase();
@@ -27,9 +28,9 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 
 		const result = await listComicSerialization(
 			{ user, database },
-			{ limit, offset, page, criteria, orderBys }
+			{ limit, offset, page, orderBys, ...param }
 		);
-		const totalCount = await countComicSerialization({ user, database }, { criteria });
+		const totalCount = await countComicSerialization({ user, database }, { ...param });
 
 		return json(result, {
 			headers: {

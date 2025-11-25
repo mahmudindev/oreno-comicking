@@ -1,6 +1,5 @@
 import type { ULID } from 'ulid';
 import { AuthError, AuthErrorType, NotFoundError } from '$lib/exception';
-import { isStringArray, isStringRecordArray } from '$lib/helper';
 import * as database from './database';
 import * as model from './model';
 
@@ -239,39 +238,11 @@ export async function listLink(
 ): Promise<model.Link[]> {
 	model.validateParameterLink(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['websiteHosts'])) {
-			param.criteriaWebsiteHosts = param.criteria['websiteHosts'];
-		}
-
-		if (isStringArray(param.criteria['relativeReferences'])) {
-			param.criteriaRelativeReferences = param.criteria['relativeReferences'];
-		}
-
-		if (isStringArray(param.criteria['hrefs'])) {
-			param.criteriaHREFs = param.criteria['hrefs'];
-		}
-	}
-
 	return await database.selectLink(ctx.database, param);
 }
 
 export async function countLink(ctx: model.Context, param: model.ParameterLink): Promise<number> {
 	model.validateParameterLink(param);
-
-	if (param.criteria) {
-		if (isStringArray(param.criteria['websiteHosts'])) {
-			param.criteriaWebsiteHosts = param.criteria['websiteHosts'];
-		}
-
-		if (isStringArray(param.criteria['relativeReferences'])) {
-			param.criteriaRelativeReferences = param.criteria['relativeReferences'];
-		}
-
-		if (isStringArray(param.criteria['hrefs'])) {
-			param.criteriaHREFs = param.criteria['hrefs'];
-		}
-	}
 
 	return await database.countLink(ctx.database, param);
 }
@@ -581,16 +552,6 @@ export async function listCategory(
 ): Promise<model.Category[]> {
 	model.validateParameterCategory(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['typeCodes'])) {
-			param.criteriaTypeCodes = param.criteria['typeCodes'];
-		}
-
-		if (isStringArray(param.criteria['parentCodes'])) {
-			param.criteriaParentCodes = param.criteria['parentCodes'];
-		}
-	}
-
 	return await database.selectCategory(ctx.database, param).then(async (result) => {
 		return await Promise.all(
 			result.map(async (result) => {
@@ -607,16 +568,6 @@ export async function countCategory(
 	param: model.ParameterCategory
 ): Promise<number> {
 	model.validateParameterCategory(param);
-
-	if (param.criteria) {
-		if (isStringArray(param.criteria['typeCodes'])) {
-			param.criteriaTypeCodes = param.criteria['typeCodes'];
-		}
-
-		if (isStringArray(param.criteria['parentCodes'])) {
-			param.criteriaParentCodes = param.criteria['parentCodes'];
-		}
-	}
 
 	return await database.countCategory(ctx.database, param);
 }
@@ -759,23 +710,11 @@ export async function deleteTagByKey(
 export async function listTag(ctx: model.Context, param: model.ParameterTag): Promise<model.Tag[]> {
 	model.validateParameterTag(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['typeCodes'])) {
-			param.criteriaTypeCodes = param.criteria['typeCodes'];
-		}
-	}
-
 	return await database.selectTag(ctx.database, param);
 }
 
 export async function countTag(ctx: model.Context, param: model.ParameterTag): Promise<number> {
 	model.validateParameterTag(param);
-
-	if (param.criteria) {
-		if (isStringArray(param.criteria['typeCodes'])) {
-			param.criteriaTypeCodes = param.criteria['typeCodes'];
-		}
-	}
 
 	return await database.countTag(ctx.database, param);
 }
@@ -877,7 +816,7 @@ export async function getComicByKey(ctx: model.Context, code: string): Promise<m
 		result.serializationCount = await countComicSerialization(ctx, {
 			criteriaComicIDs: [result.id]
 		});
-		result.externalCount = 0;
+		result.externalCount = await countComicExternal(ctx, { criteriaComicIDs: [result.id] });
 		result.chapterCount = 0;
 		result.categoryCount = 0;
 		result.tagCount = 0;
@@ -913,7 +852,7 @@ export async function updateComicByKey(
 		result.serializationCount = await countComicSerialization(ctx, {
 			criteriaComicIDs: [result.id]
 		});
-		result.externalCount = 0;
+		result.externalCount = await countComicExternal(ctx, { criteriaComicIDs: [result.id] });
 		result.chapterCount = 0;
 		result.categoryCount = 0;
 		result.tagCount = 0;
@@ -945,28 +884,6 @@ export async function listComic(
 ): Promise<model.Comic[]> {
 	model.validateParameterComic(param);
 
-	if (param.criteria) {
-		if (isStringRecordArray(param.criteria['externals'])) {
-			param.criteriaExternals = param.criteria['externals'].map((v) => {
-				const external: model.ParameterComicExternal = {};
-
-				if (v['linkWebsiteHosts']) {
-					//
-				}
-
-				if (v['linkRelativeReferences']) {
-					//
-				}
-
-				if (v['linkHREFs']) {
-					//
-				}
-
-				return external;
-			});
-		}
-	}
-
 	return await database.selectComic(ctx.database, param).then(async (result) => {
 		return await Promise.all(
 			result.map(async (result) => {
@@ -978,7 +895,7 @@ export async function listComic(
 				result.serializationCount = await countComicSerialization(ctx, {
 					criteriaComicIDs: [result.id]
 				});
-				result.externalCount = 0;
+				result.externalCount = await countComicExternal(ctx, { criteriaComicIDs: [result.id] });
 				result.chapterCount = 0;
 				result.categoryCount = 0;
 				result.tagCount = 0;
@@ -1064,12 +981,6 @@ export async function listComicTitle(
 ): Promise<model.ComicTitle[]> {
 	model.validateParameterComicTitle(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
-
 	return await database.selectComicTitle(ctx.database, param);
 }
 
@@ -1078,12 +989,6 @@ export async function countComicTitle(
 	param: model.ParameterComicTitle
 ): Promise<number> {
 	model.validateParameterComicTitle(param);
-
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
 
 	return await database.countComicTitle(ctx.database, param);
 }
@@ -1156,12 +1061,6 @@ export async function listComicCover(
 ): Promise<model.ComicCover[]> {
 	model.validateParameterComicCover(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
-
 	return await database.selectComicCover(ctx.database, param);
 }
 
@@ -1170,12 +1069,6 @@ export async function countComicCover(
 	param: model.ParameterComicCover
 ): Promise<number> {
 	model.validateParameterComicCover(param);
-
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
 
 	return await database.countComicCover(ctx.database, param);
 }
@@ -1248,12 +1141,6 @@ export async function listComicSynopsis(
 ): Promise<model.ComicSynopsis[]> {
 	model.validateParameterComicSynopsis(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
-
 	return await database.selectComicSynopsis(ctx.database, param);
 }
 
@@ -1262,12 +1149,6 @@ export async function countComicSynopsis(
 	param: model.ParameterComicSynopsis
 ): Promise<number> {
 	model.validateParameterComicSynopsis(param);
-
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
 
 	return await database.countComicSynopsis(ctx.database, param);
 }
@@ -1345,12 +1226,6 @@ export async function listComicCharacter(
 ): Promise<model.ComicCharacter[]> {
 	model.validateParameterComicSynopsis(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
-
 	return await database.selectComicCharacter(ctx.database, param);
 }
 
@@ -1359,12 +1234,6 @@ export async function countComicCharacter(
 	param: model.ParameterComicCharacter
 ): Promise<number> {
 	model.validateParameterComicSynopsis(param);
-
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
 
 	return await database.countComicCharacter(ctx.database, param);
 }
@@ -1456,12 +1325,6 @@ export async function listComicAuthor(
 ): Promise<model.ComicAuthor[]> {
 	model.validateParameterComicAuthor(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
-
 	return await database.selectComicAuthor(ctx.database, param);
 }
 
@@ -1470,12 +1333,6 @@ export async function countComicAuthor(
 	param: model.ParameterComicAuthor
 ): Promise<number> {
 	model.validateParameterComicAuthor(param);
-
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
 
 	return await database.countComicAuthor(ctx.database, param);
 }
@@ -1567,12 +1424,6 @@ export async function listComicSerialization(
 ): Promise<model.ComicSerialization[]> {
 	model.validateParameterComicSerialization(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
-
 	return await database.selectComicSerialization(ctx.database, param);
 }
 
@@ -1581,12 +1432,6 @@ export async function countComicSerialization(
 	param: model.ParameterComicSerialization
 ): Promise<number> {
 	model.validateParameterComicSerialization(param);
-
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
 
 	return await database.countComicSerialization(ctx.database, param);
 }
@@ -1678,12 +1523,6 @@ export async function listComicExternal(
 ): Promise<model.ComicExternal[]> {
 	model.validateParameterComicExternal(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
-
 	return await database.selectComicExternal(ctx.database, param);
 }
 
@@ -1692,12 +1531,6 @@ export async function countComicExternal(
 	param: model.ParameterComicExternal
 ): Promise<number> {
 	model.validateParameterComicExternal(param);
-
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
 
 	return await database.countComicExternal(ctx.database, param);
 }
@@ -1779,12 +1612,6 @@ export async function listComicChapter(
 ): Promise<model.ComicChapter[]> {
 	model.validateParameterComicChapter(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
-	}
-
 	return await database.selectComicChapter(ctx.database, param).then(async (result) => {
 		return await Promise.all(
 			result.map(async (result) => {
@@ -1802,11 +1629,91 @@ export async function countComicChapter(
 ): Promise<number> {
 	model.validateParameterComicChapter(param);
 
-	if (param.criteria) {
-		if (isStringArray(param.criteria['comicCodes'])) {
-			param.criteriaComicCodes = param.criteria['comicCodes'];
-		}
+	return await database.countComicChapter(ctx.database, param);
+}
+
+// + Comic Author Position
+
+export async function addComicAuthorPosition(
+	ctx: model.Context,
+	data: model.NewComicAuthorPosition
+): Promise<model.ComicAuthorPosition> {
+	if (!ctx.user || !ctx.user.hasPermission(['WRITE', 'COMICAUTHORPOSITION'])) {
+		throw new AuthError(
+			'permission denied to add comic author position',
+			AuthErrorType.Unauthorized
+		);
 	}
 
-	return await database.countComicChapter(ctx.database, param);
+	return await database.insertComicAuthorPosition(ctx.database, data);
+}
+
+export async function getComicAuthorPositionByKey(
+	ctx: model.Context,
+	code: string
+): Promise<model.ComicAuthorPosition> {
+	model.validatePersonKey(code);
+
+	const result = await database.selectComicAuthorPositionByKey(ctx.database, code);
+
+	if (!result) throw new NotFoundError('comic author position does not exist');
+
+	return result;
+}
+
+export async function updateComicAuthorPositionByKey(
+	ctx: model.Context,
+	code: string,
+	data: model.SetComicAuthorPosition
+): Promise<model.ComicAuthorPosition> {
+	model.validateComicAuthorPositionKey(code);
+
+	if (!ctx.user || !ctx.user.hasPermission(['WRITE', 'COMICAUTHORPOSITION'])) {
+		throw new AuthError(
+			'permission denied to update comic author position',
+			AuthErrorType.Unauthorized
+		);
+	}
+
+	const result = await database.updateComicAuthorPositionByKey(ctx.database, code, data);
+
+	if (!result) throw new NotFoundError('comic author position does not exist');
+
+	return result;
+}
+
+export async function deleteComicAuthorPositionByKey(
+	ctx: model.Context,
+	code: string
+): Promise<void> {
+	model.validateComicAuthorPositionKey(code);
+
+	if (!ctx.user || !ctx.user.hasPermission(['WRITE', 'COMICAUTHORPOSITION'])) {
+		throw new AuthError(
+			'permission denied to delete comic author position',
+			AuthErrorType.Unauthorized
+		);
+	}
+
+	const result = await database.deleteComicAuthorPositionByKey(ctx.database, code);
+
+	if (!result) throw new NotFoundError('comic author position does not exist');
+}
+
+export async function listComicAuthorPosition(
+	ctx: model.Context,
+	param: model.ParameterComicAuthorPosition
+): Promise<model.ComicAuthorPosition[]> {
+	model.validateParameterComicAuthorPosition(param);
+
+	return await database.selectComicAuthorPosition(ctx.database, param);
+}
+
+export async function countComicAuthorPosition(
+	ctx: model.Context,
+	param: model.ParameterComicAuthorPosition
+): Promise<number> {
+	model.validateParameterComicAuthorPosition(param);
+
+	return await database.countComicAuthorPosition(ctx.database, param);
 }

@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import type { NewLanguage } from '$lib/model';
+import type { NewLanguage, ParameterLanguage } from '$lib/model';
 import { json } from '@sveltejs/kit';
 import { getDatabase, getUser } from '$lib/server/context';
 import { addLanguage, countLanguage, listLanguage } from '$lib/server/service';
@@ -13,7 +13,9 @@ export const GET: RequestHandler = async ({ request, url }) => {
 	const page = toNumber(url.searchParams.get('page')) || undefined;
 
 	const orderBys = parseOrderBys(url.searchParams.getAll('orderBy'));
-	const criteria: Record<string, unknown> = {};
+	const param: ParameterLanguage = {
+		criteriaLangs: url.searchParams.getAll('lang')
+	};
 
 	try {
 		const database = await getDatabase();
@@ -21,9 +23,9 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 		const result = await listLanguage(
 			{ user, database },
-			{ limit, offset, page, criteria, orderBys }
+			{ limit, offset, page, orderBys, ...param }
 		);
-		const totalCount = await countLanguage({ user, database }, { criteria });
+		const totalCount = await countLanguage({ user, database }, { ...param });
 
 		return json(result, {
 			headers: {

@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import type { NewCategory } from '$lib/model';
+import type { NewCategory, ParameterCategory } from '$lib/model';
 import { json } from '@sveltejs/kit';
 import { getDatabase, getUser } from '$lib/server/context';
 import { addCategory, countCategory, listCategory } from '$lib/server/service';
@@ -13,10 +13,12 @@ export const GET: RequestHandler = async ({ request, url }) => {
 	const page = toNumber(url.searchParams.get('page')) || undefined;
 
 	const orderBys = parseOrderBys(url.searchParams.getAll('orderBy'));
-	const criteria: Record<string, unknown> = {};
-
-	criteria['typeCodes'] = url.searchParams.getAll('typeCode');
-	criteria['parentCodes'] = url.searchParams.getAll('parentCode');
+	const param: ParameterCategory = {
+		criteriaTypeCodes: url.searchParams.getAll('typeCode'),
+		criteriaCodes: url.searchParams.getAll('code'),
+		criteriaTypeCodeCodes: url.searchParams.getAll('typeCodeCode'),
+		criteriaParentCodes: url.searchParams.getAll('parentCode')
+	};
 
 	try {
 		const database = await getDatabase();
@@ -24,9 +26,9 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 		const result = await listCategory(
 			{ user, database },
-			{ limit, offset, page, criteria, orderBys }
+			{ limit, offset, page, orderBys, ...param }
 		);
-		const totalCount = await countCategory({ user, database }, { criteria });
+		const totalCount = await countCategory({ user, database }, { ...param });
 
 		return json(result, {
 			headers: {

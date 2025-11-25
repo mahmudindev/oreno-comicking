@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import type { NewCharacter } from '$lib/model';
+import type { NewCharacter, ParameterCharacter } from '$lib/model';
 import { json } from '@sveltejs/kit';
 import { getDatabase, getUser } from '$lib/server/context';
 import { addCharacter, countCharacter, listCharacter } from '$lib/server/service';
@@ -13,7 +13,9 @@ export const GET: RequestHandler = async ({ request, url }) => {
 	const page = toNumber(url.searchParams.get('page')) || undefined;
 
 	const orderBys = parseOrderBys(url.searchParams.getAll('orderBy'));
-	const criteria: Record<string, unknown> = {};
+	const param: ParameterCharacter = {
+		criteriaCodes: url.searchParams.getAll('code')
+	};
 
 	try {
 		const database = await getDatabase();
@@ -21,9 +23,9 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 		const result = await listCharacter(
 			{ user, database },
-			{ limit, offset, page, criteria, orderBys }
+			{ limit, offset, page, orderBys, ...param }
 		);
-		const totalCount = await countCharacter({ user, database }, { criteria });
+		const totalCount = await countCharacter({ user, database }, { ...param });
 
 		return json(result, {
 			headers: {

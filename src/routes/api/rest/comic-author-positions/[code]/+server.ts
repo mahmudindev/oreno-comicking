@@ -1,13 +1,13 @@
 import type { RequestHandler } from './$types';
-import type { SetComicChapter } from '$lib/model';
+import type { SetComicAuthorPosition } from '$lib/model';
 import { json } from '@sveltejs/kit';
 import { getDatabase, getUser } from '$lib/server/context';
 import {
-	deleteComicChapterByKey,
-	getComicChapterByKey,
-	updateComicChapterByKey
+	deleteComicAuthorPositionByKey,
+	getComicAuthorPositionByKey,
+	updateComicAuthorPositionByKey
 } from '$lib/server/service';
-import { stringRemoveSuffix, toDate, toNumber } from '$lib/helper';
+import { stringRemoveSuffix } from '$lib/helper';
 import { Error415JSON, Error500JSON } from '$lib/api';
 import { APIError, DatabaseError, GenericError, NotFoundError } from '$lib/exception';
 
@@ -16,14 +16,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 		const database = await getDatabase();
 		const user = await getUser({ headers: request.headers });
 
-		const paramNV = params.nv.split('+', 2);
-
-		const result = await getComicChapterByKey(
-			{ user, database },
-			params.comicCode,
-			Number(paramNV[0]),
-			paramNV[1]
-		);
+		const result = await getComicAuthorPositionByKey({ user, database }, params.code);
 
 		return json(result, {
 			headers: {
@@ -51,7 +44,7 @@ export const GET: RequestHandler = async ({ params, request }) => {
 };
 
 export const PATCH: RequestHandler = async ({ params, request }) => {
-	let data: SetComicChapter = {};
+	let data: SetComicAuthorPosition = {};
 
 	switch (request.headers.get('Content-Type')) {
 		case 'application/json':
@@ -59,10 +52,8 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 			break;
 		case 'application/x-www-form-urlencoded': {
 			const f = await request.formData();
-			data.number = toNumber(f.get('number')) ?? undefined;
-			data.version = (f.get('version') as string | null) ?? undefined;
-			data.releasedAt = toDate(f.get('released_at')) ?? undefined;
-			data.volumeNumber = toNumber(f.get('volume_number')) ?? undefined;
+			data.code = (f.get('code') as string | null) ?? undefined;
+			data.name = (f.get('name') as string | null) ?? undefined;
 			break;
 		}
 		default:
@@ -73,23 +64,13 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 		const database = await getDatabase();
 		const user = await getUser({ headers: request.headers });
 
-		const paramNV = params.nv.split('+');
-
-		const result = await updateComicChapterByKey(
-			{ user, database },
-			params.comicCode,
-			Number(paramNV[0]),
-			paramNV[1],
-			data
-		);
+		const result = await updateComicAuthorPositionByKey({ user, database }, params.code, data);
 
 		if (!result) return new Response(undefined, { status: 204 });
 
-		const resultKey = String(result.number) + result.version ? '+' + result.version : '';
-
 		return json(result, {
 			headers: {
-				Location: stringRemoveSuffix(new URL(request.url).pathname, params.nv) + resultKey,
+				Location: stringRemoveSuffix(new URL(request.url).pathname, params.code) + result.code,
 				'X-Content-Type-Options': 'nosniff'
 			}
 		});
@@ -118,14 +99,7 @@ export const DELETE: RequestHandler = async ({ params, request }) => {
 		const database = await getDatabase();
 		const user = await getUser({ headers: request.headers });
 
-		const paramNV = params.nv.split('+');
-
-		await deleteComicChapterByKey(
-			{ user, database },
-			params.comicCode,
-			Number(paramNV[0]),
-			paramNV[1]
-		);
+		await deleteComicAuthorPositionByKey({ user, database }, params.code);
 
 		return new Response(undefined, { status: 204 });
 	} catch (e) {

@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import type { NewWebsite } from '$lib/model';
+import type { NewWebsite, ParameterWebsite } from '$lib/model';
 import { json } from '@sveltejs/kit';
 import { addWebsite, countWebsite, listWebsite } from '$lib/server/service';
 import { getDatabase, getUser } from '$lib/server/context';
@@ -13,7 +13,9 @@ export const GET: RequestHandler = async ({ request, url }) => {
 	const page = toNumber(url.searchParams.get('page')) || undefined;
 
 	const orderBys = parseOrderBys(url.searchParams.getAll('orderBy'));
-	const criteria: Record<string, unknown> = {};
+	const param: ParameterWebsite = {
+		criteriaHosts: url.searchParams.getAll('host')
+	};
 
 	try {
 		const database = await getDatabase();
@@ -21,9 +23,9 @@ export const GET: RequestHandler = async ({ request, url }) => {
 
 		const result = await listWebsite(
 			{ user, database },
-			{ limit, offset, page, criteria, orderBys }
+			{ limit, offset, page, orderBys, ...param }
 		);
-		const totalCount = await countWebsite({ user, database }, { criteria });
+		const totalCount = await countWebsite({ user, database }, { ...param });
 
 		return json(result, {
 			headers: {

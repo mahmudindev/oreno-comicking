@@ -1,9 +1,13 @@
 import type { RequestHandler } from './$types';
-import type { NewComic, ParameterComic } from '$lib/model';
+import type { NewComicAuthorPosition, ParameterComicAuthorPosition } from '$lib/model';
 import { json } from '@sveltejs/kit';
 import { getDatabase, getUser } from '$lib/server/context';
-import { addComic, countComic, listComic } from '$lib/server/service';
-import { parseOrderBys, toDate, toNumber } from '$lib/helper';
+import {
+	addComicAuthorPosition,
+	countComicAuthorPosition,
+	listComicAuthorPosition
+} from '$lib/server/service';
+import { parseOrderBys, toNumber } from '$lib/helper';
 import { Error415JSON, Error500JSON } from '$lib/api';
 import { APIError, DatabaseError, GenericError } from '$lib/exception';
 
@@ -13,19 +17,19 @@ export const GET: RequestHandler = async ({ request, url }) => {
 	const page = toNumber(url.searchParams.get('page')) || undefined;
 
 	const orderBys = parseOrderBys(url.searchParams.getAll('orderBy'));
-	const param: ParameterComic = {
-		criteriaCodes: url.searchParams.getAll('code'),
-		criteriaExternalLinkWebsiteHost: url.searchParams.getAll('externalLinkWebsiteHost'),
-		criteriaExternalRelativeReferences: url.searchParams.getAll('externalLinkRelativeReference'),
-		criteriaExternalHREFs: url.searchParams.getAll('externalLinkHREF')
+	const param: ParameterComicAuthorPosition = {
+		criteriaCodes: url.searchParams.getAll('code')
 	};
 
 	try {
 		const database = await getDatabase();
 		const user = await getUser({ headers: request.headers });
 
-		const result = await listComic({ user, database }, { limit, offset, page, orderBys, ...param });
-		const totalCount = await countComic({ user, database }, { ...param });
+		const result = await listComicAuthorPosition(
+			{ user, database },
+			{ limit, offset, page, orderBys, ...param }
+		);
+		const totalCount = await countComicAuthorPosition({ user, database }, { ...param });
 
 		return json(result, {
 			headers: {
@@ -52,7 +56,10 @@ export const GET: RequestHandler = async ({ request, url }) => {
 };
 
 export const POST: RequestHandler = async ({ request }) => {
-	let data: NewComic = {};
+	let data: NewComicAuthorPosition = {
+		code: '',
+		name: ''
+	};
 
 	switch (request.headers.get('Content-Type')) {
 		case 'application/json':
@@ -60,13 +67,8 @@ export const POST: RequestHandler = async ({ request }) => {
 			break;
 		case 'application/x-www-form-urlencoded': {
 			const f = await request.formData();
-			data.code = (f.get('code') as string | null) ?? undefined;
-			data.publishedFrom = toDate(f.get('published_from')) ?? undefined;
-			data.publishedTo = toDate(f.get('published_to')) ?? undefined;
-			data.totalChapter = toNumber(f.get('total_chapter')) ?? undefined;
-			data.totalVolume = toNumber(f.get('total_volume')) ?? undefined;
-			data.nsfw = toNumber(f.get('nsfw')) ?? undefined;
-			data.nsfl = toNumber(f.get('nsfl')) ?? undefined;
+			data.code = f.get('code') as string;
+			data.name = f.get('name') as string;
 			break;
 		}
 		default:
@@ -77,7 +79,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		const database = await getDatabase();
 		const user = await getUser({ headers: request.headers });
 
-		const result = await addComic({ user, database }, data);
+		const result = await addComicAuthorPosition({ user, database }, data);
 
 		return json(result, {
 			headers: {

@@ -1,5 +1,5 @@
 import type { RequestHandler } from './$types';
-import type { NewComicSynopsis } from '$lib/model';
+import type { NewComicSynopsis, ParameterComicSynopsis } from '$lib/model';
 import { json } from '@sveltejs/kit';
 import { getDatabase, getUser } from '$lib/server/context';
 import { addComicSynopsis, countComicSynopsis, listComicSynopsis } from '$lib/server/service';
@@ -13,9 +13,10 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 	const page = toNumber(url.searchParams.get('page')) || undefined;
 
 	const orderBys = parseOrderBys(url.searchParams.getAll('orderBy'));
-	const criteria: Record<string, unknown> = {};
-
-	criteria['comicCodes'] = [params.comicCode];
+	const param: ParameterComicSynopsis = {
+		criteriaComicCodes: [params.comicCode],
+		criteriaULIDs: url.searchParams.getAll('ulid')
+	};
 
 	try {
 		const database = await getDatabase();
@@ -23,9 +24,9 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 
 		const result = await listComicSynopsis(
 			{ user, database },
-			{ limit, offset, page, criteria, orderBys }
+			{ limit, offset, page, orderBys, ...param }
 		);
-		const totalCount = await countComicSynopsis({ user, database }, { criteria });
+		const totalCount = await countComicSynopsis({ user, database }, { ...param });
 
 		return json(result, {
 			headers: {

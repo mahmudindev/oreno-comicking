@@ -6,6 +6,7 @@ import { addComicCover, countComicCover, listComicCover } from '$lib/server/serv
 import { parseOrderBys, toNumber } from '$lib/helper';
 import { Error415JSON, Error500JSON } from '$lib/api';
 import { APIError, DatabaseError, GenericError } from '$lib/exception';
+import type { ParameterComicCover } from '$lib/model';
 
 export const GET: RequestHandler = async ({ params, request, url }) => {
 	const limit = toNumber(url.searchParams.get('limit')) || 10;
@@ -13,9 +14,10 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 	const page = toNumber(url.searchParams.get('page')) || undefined;
 
 	const orderBys = parseOrderBys(url.searchParams.getAll('orderBy'));
-	const criteria: Record<string, unknown> = {};
-
-	criteria['comicCodes'] = [params.comicCode];
+	const param: ParameterComicCover = {
+		criteriaComicCodes: [params.comicCode],
+		criteriaULIDs: url.searchParams.getAll('ulid')
+	};
 
 	try {
 		const database = await getDatabase();
@@ -23,9 +25,9 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 
 		const result = await listComicCover(
 			{ user, database },
-			{ limit, offset, page, criteria, orderBys }
+			{ limit, offset, page, orderBys, ...param }
 		);
-		const totalCount = await countComicCover({ user, database }, { criteria });
+		const totalCount = await countComicCover({ user, database }, { ...param });
 
 		return json(result, {
 			headers: {
